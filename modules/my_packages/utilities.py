@@ -84,32 +84,47 @@ def set_working_directory(folder: str, file: str) -> str:
     print(f"[DEBUG] Path resolved to: {absolute_path}")
     return absolute_path
 
-def compute_percentiles(df:pd.DataFrame, percentiles:Tuple[int, int]):
+def compute_percentiles(df: pd.DataFrame, percentiles: Tuple[int, int]):
     if not isinstance(df, pd.DataFrame):
         raise ValueError("df must be a pandas df.")
-    if not ( isinstance(percentiles, tuple) and len(percentiles)==2 and all(isinstance(x, int) for x in percentiles) ):
+    if not (isinstance(percentiles, tuple) and len(percentiles) == 2 and all(isinstance(x, int) for x in percentiles)):
         raise ValueError("percentiles must be a tuple of exactly two elements, containing only int.")
 
+    # Calcul des bornes supérieures et inférieures
     upper_bound = df.apply(
         lambda row: np.nanpercentile(row, q=percentiles[1]) if not row.dropna().empty else np.nan, axis=1)
-    # Format to ease comparison after
-    upper_bound = pd.DataFrame(data=np.tile(upper_bound.values[:, None], (1, df.shape[1])), index=df.index,
-                               columns=df.columns)
-
     lower_bound = df.apply(
         lambda row: np.nanpercentile(row, q=percentiles[0]) if not row.dropna().empty else np.nan, axis=1)
-    # Format to ease comparison after
+
+    # Formatage pour comparaison
+    upper_bound = pd.DataFrame(data=np.tile(upper_bound.values[:, None], (1, df.shape[1])), index=df.index,
+                               columns=df.columns)
     lower_bound = pd.DataFrame(data=np.tile(lower_bound.values[:, None], (1, df.shape[1])), index=df.index,
                                columns=df.columns)
 
-    # To store
+    # Calcul des signaux
     signals = pd.DataFrame(data=np.nan, index=df.index, columns=df.columns)
     signals[df >= upper_bound] = 1.0
     signals[df <= lower_bound] = -1.0
 
-    return {'upper_bound': upper_bound,
-            'lower_bound': lower_bound,
-            'signals': signals}
+    # Calcul de tous les percentiles (0, 10, 20, ..., 100)
+    all_percentiles = {f"p{q}": df.apply(
+        lambda row: np.nanpercentile(row, q=q) if not row.dropna().empty else np.nan, axis=1)
+        for q in range(0, 101, 10)}  # Par exemple, tous les 10%
+
+    # Formatage des percentiles pour correspondre à la structure du DataFrame
+    for key, series in all_percentiles.items():
+        all_percentiles[key] = pd.DataFrame(data=np.tile(series.values[:, None], (1, df.shape[1])), index=df.index,
+                                            columns=df.columns)
+
+    # Retourne les bornes, les signaux et tous les percentiles
+    return {
+        'upper_bound': upper_bound,
+        'lower_bound': lower_bound,
+        'signals': signals,
+        'all_percentiles': all_percentiles  # Tous les percentiles calculés
+    }
+
 
 def clean_dataframe(df:pd.DataFrame) -> pd.DataFrame:
     """
