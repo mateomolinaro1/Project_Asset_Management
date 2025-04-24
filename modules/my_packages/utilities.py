@@ -1,61 +1,88 @@
+import os
+import sys
 import pandas as pd
 import numpy as np
 from typing import Union, Tuple
 
-
-def non_overlapping_indices_rolling_window(df: Union[pd.DataFrame, pd.Series, np.ndarray], window:int, handle_len_df_non_divisible_by_window=True):
+# def set_working_directory(folder: str, file: str):
+#     """
+#     Returns an absolute path to a file in a given folder relative to the main script's location.
+#
+#     Args:
+#         folder (str): The folder containing the data.
+#         file (str): The name of the data file.
+#
+#     Returns:
+#         str: Absolute path to the target file.
+#     """
+#     try:
+#         main_script = sys.modules["__main__"].__file__
+#         base_dir = os.path.dirname(os.path.abspath(main_script))
+#     except (AttributeError, KeyError):
+#         base_dir = os.getcwd()  # fallback: console/debug mode
+#
+#     return os.path.join(base_dir, folder, file)
+# def set_working_directory(folder: str, file: str) -> str:
+#     """
+#     Returns an absolute path to a file in a given folder relative to the main script's location.
+#     """
+#     try:
+#         main_script = sys.modules["__main__"].__file__
+#         base_dir = os.path.dirname(os.path.abspath(main_script))
+#     except (AttributeError, KeyError):
+#         # Debug mode or interactive mode fallback
+#         print("[DEBUG] Falling back to current working directory (os.getcwd())")
+#         base_dir = os.getcwd()
+#
+#     return os.path.join(base_dir, folder, file)
+#     def set_working_directory(folder: str, file: str) -> str:
+#         """
+#         Returns an absolute path to a file in a given folder relative to the main script's location.
+#         Handles various execution modes (Run, Debug, Console).
+#         """
+#         try:
+#             # Try to retrieve the file of the main script
+#             main_script = sys.modules["__main__"].__file__
+#             base_dir = os.path.dirname(os.path.abspath(main_script))
+#         except (AttributeError, KeyError):
+#             # If fail (interactive console or PyCharm Debug), use le CWD
+#             print("[INFO] Fallback: using current working directory (os.getcwd())")
+#             base_dir = os.getcwd()
+#
+#         # Return the full path
+#         absolute_path = os.path.join(base_dir, folder, file)
+#         print(f"[DEBUG] Path resolved to: {absolute_path}")
+#         return absolute_path
+def find_project_root(marker_files="main.py") -> str:
     """
-    Generates non-overlapping indices for rolling window on dataframe.
-    For example, if df indices 0,1,2,...,100 and window=30 it returns:
-    0,30,60,90,100 if handle_len_df_non_divisible_by_window is set to True
-    because 100 is non-divisible by 30 (90+30 will be out of range).
-
-    Args:
-        df: pandas df
-        window: len of the npn-overlapping rolling window
-        handle_len_df_non_divisible_by_window: If True, includes a last partial window
-
-    Returns:
-        A list of indices at the beginning of each window
+    Remonte dans l'arborescence pour trouver la racine du projet en cherchant un des fichiers marqueurs.
     """
-    # Check inputs
-    if not isinstance(df, (pd.DataFrame, pd.Series, np.ndarray)):
-        raise ValueError("df must be a pandas dataframe.")
-    if not isinstance(window, int):
-        raise ValueError("window must be an int.")
-    if not isinstance(handle_len_df_non_divisible_by_window, bool):
-        raise ValueError("handle_len_df_non_divisible_by_window must be a bool.")
+    current_dir = os.getcwd()
+    while True:
+        if any(os.path.exists(os.path.join(current_dir, marker)) for marker in marker_files):
+            return current_dir
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir == current_dir:
+            # On est à la racine du disque
+            raise FileNotFoundError("Impossible de trouver la racine du projet.")
+        current_dir = parent_dir
 
-    if window>len(df):
-        raise ValueError("The length of the window must be less or equal than the nb of rows of the df.")
+def set_working_directory(folder: str, file: str) -> str:
+    """
+    Returns an absolute path to a file in a given folder relative to the main script's location.
+    Handles various execution modes (Run, Debug, Console).
+    """
+    try:
+        main_script = sys.modules["__main__"].__file__
+        #base_dir = os.path.dirname(os.path.abspath(main_script))
+        base_dir = find_project_root()
+    except (AttributeError, KeyError):
+        print("[INFO] Fallback: using project root via marker file.")
+        base_dir = find_project_root()
 
-    len_df = len(df)
-    indices = list(range(0, len(df), window))
-
-    # Check if there are elements non-covered at this end
-    last_index = indices[-1]
-    if handle_len_df_non_divisible_by_window and last_index < len_df:
-        indices.append(len_df)
-
-    return indices
-
-def rolling_z_score(df: Union[pd.DataFrame, pd.Series], w:int):
-    """ Function to rolling-standardize a dataframe or series with rolling window w"""
-    # Check inputs
-    if not isinstance(df, (pd.DataFrame, pd.Series)):
-        raise ValueError("df must be either a pandas dataframe or series.")
-    if not isinstance(w, int):
-        raise ValueError("w must be an int.")
-    if w>df.shape[0]:
-        raise ValueError("The length of the window cannot be greater than the nb of rows of the df/series.")
-
-    zscores = pd.DataFrame(np.nan, index=df.index, columns=[df.columns])
-    for i_end in range(w, df.shape[0]+1):
-        df_local = df.iloc[i_end-w:i_end] # upper bound not included
-        zscores_temp = (df_local - df_local.mean(axis=0))/df_local.std(axis=0)
-        zscores.iloc[i_end-1,:] = zscores_temp.iloc[-1,:] # because lower bound is included
-
-    return zscores
+    absolute_path = os.path.join(base_dir, folder, file)
+    print(f"[DEBUG] Path resolved to: {absolute_path}")
+    return absolute_path
 
 def compute_percentiles(df:pd.DataFrame, percentiles:Tuple[int, int]):
     if not isinstance(df, pd.DataFrame):
@@ -83,3 +110,76 @@ def compute_percentiles(df:pd.DataFrame, percentiles:Tuple[int, int]):
     return {'upper_bound': upper_bound,
             'lower_bound': lower_bound,
             'signals': signals}
+
+def clean_dataframe(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Cleans the DataFrame by replacing -inf or inf values by nan.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to clean.
+
+    Returns:
+        pd.DataFrame: A cleaned DataFrame with NaN rows and columns removed.
+    """
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("df must be a pandas df.")
+
+    # Replace -inf and inf with NaN
+    df = df.replace([np.inf, -np.inf], np.nan)
+    return df
+
+def compute_zscores(df:pd.DataFrame, axis:int=1) -> pd.DataFrame:
+    """
+    Computes the z-scores of a DataFrame along the specified axis.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to compute z-scores for.
+        axis (int): The axis along which to compute z-scores. 0 for rows, 1 for columns.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the z-scores.
+    """
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("df must be a pandas df.")
+    if axis not in [0, 1]:
+        raise ValueError("axis must be either 0 (rows) or 1 (columns).")
+
+    mean = df.mean(axis=axis, skipna=True)
+    std = df.std(axis=axis, skipna=True)
+
+    zscores = (df.values - mean.values[:,None]) / std.values[:,None]
+    zscores = pd.DataFrame(data=zscores, index=df.index, columns=df.columns)
+    return zscores
+
+def winsorize_dataframe(df:pd.DataFrame, percentiles:Tuple[int, int]=(1,99), axis:int=1) -> pd.DataFrame:
+    """
+    Winsorizes the DataFrame by replacing extreme values with the specified percentiles row-wise or column-wise.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to winsorize.
+        percentiles (Tuple[int, int]): The lower and upper percentiles to use for winsorization.
+        axis (int): The axis along which to apply winsorization.
+                    0 for column-wise (apply on each column),
+                    1 for row-wise (apply on each row).
+    Returns:
+        pd.DataFrame: A winsorized DataFrame.
+    """
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("df must be a pandas DataFrame.")
+    if not (
+            isinstance(percentiles, tuple)
+            and len(percentiles) == 2
+            and all(isinstance(x, int) for x in percentiles)
+    ):
+        raise ValueError("percentiles must be a tuple of two integers.")
+    if axis not in [0, 1]:
+        raise ValueError("axis must be either 0 (rows) or 1 (columns).")
+
+    def winsorize_row_or_col(row_or_col):
+        if row_or_col.isna().all():
+            return row_or_col  # we keep the row or colum empty
+        lower = np.nanpercentile(row_or_col, percentiles[0])
+        upper = np.nanpercentile(row_or_col, percentiles[1])
+        return row_or_col.clip(lower=lower, upper=upper)
+
+    return df.apply(winsorize_row_or_col, axis=axis)
