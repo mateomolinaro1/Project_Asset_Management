@@ -87,7 +87,53 @@ class EqualWeightingScheme(WeightingScheme):
         return self.weights
 
     def rebalance_portfolio(self):
-        pass
+        """
+        Rebalance the portfolio and compute weights evolution between rebalancing dates.
+        Returns rebalanced weights accounting for price drift between rebalancing dates.
+        """
+        # First compute weights if not already done
+        if self.weights is None:
+            self.weights = self.compute_weights()
+        
+        # If no rebalancing period specified or rebalancing at every period, return original weights
+        if self.rebal_periods is None or self.rebal_periods == 0:
+            return self.weights
+        
+        # Initialize rebalanced weights
+        self.rebalanced_weights = pd.DataFrame(0.0, index=self.weights.index, columns=self.weights.columns)
+        
+        # Set initial weights and define first rebalancing date
+        first_date = self.weights.index[0]
+        self.rebalanced_weights.loc[first_date] = self.weights.loc[first_date]
+        
+        # Create list of rebalancing dates starting from first date
+        all_dates = self.weights.index
+        date_position = pd.Series(range(len(all_dates)), index=all_dates)
+        rebalancing_dates = all_dates[range(0, len(all_dates), self.rebal_periods)]
+        
+        # Loop through all dates to update weights
+        for t, date in enumerate(all_dates[1:], 1):  # Start from second date
+            if date in rebalancing_dates:
+                # On rebalancing dates, use the computed weights
+                self.rebalanced_weights.loc[date] = self.weights.loc[date]
+            else:
+                # Between rebalancing dates, let weights drift with returns
+                prev_date = all_dates[t-1]
+                prev_weights = self.rebalanced_weights.loc[prev_date]
+                current_returns = self.returns.loc[date]
+                
+                # Calculate drifted weights
+                drifted_weights = prev_weights * (1 + current_returns)
+                
+                # Normalize weights based on portfolio type
+                if self.portfolio_type == "long_only":
+                    total_weight = drifted_weights.sum()
+                    if total_weight > 0:
+                        drifted_weights = drifted_weights / total_weight
+                
+                self.rebalanced_weights.loc[date] = drifted_weights
+        
+        return self.rebalanced_weights.fillna(0.0)
 
 class NaiveRiskParity(WeightingScheme):
     """Class to implement the naive risk parity weighting scheme"""

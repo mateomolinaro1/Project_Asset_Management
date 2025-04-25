@@ -107,12 +107,12 @@ def compute_percentiles(df: pd.DataFrame, percentiles: Tuple[int, int]):
     signals[df >= upper_bound] = 1.0
     signals[df <= lower_bound] = -1.0
 
-    # Calcul de tous les percentiles (0, 10, 20, ..., 100)
+    # Calcul de tous les percentiles 
     all_percentiles = {f"p{q}": df.apply(
         lambda row: np.nanpercentile(row, q=q) if not row.dropna().empty else np.nan, axis=1)
-        for q in range(0, 101, 10)}  # Par exemple, tous les 10%
+        for q in range(0, 101, 10)} # Calcul des percentiles de 0 à 100 par pas de 10
 
-    # Formatage des percentiles pour correspondre à la structure du DataFrame
+    # Formatage des percentiles
     for key, series in all_percentiles.items():
         all_percentiles[key] = pd.DataFrame(data=np.tile(series.values[:, None], (1, df.shape[1])), index=df.index,
                                             columns=df.columns)

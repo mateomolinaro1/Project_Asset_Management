@@ -61,6 +61,7 @@ performance_analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,
                                            freq='m',
                                            zscores=cs_mom.signals_values,
                                            forward_returns=data_manager.aligned_returns)
+
 metrics = performance_analyzer.compute_metrics()
 for metric in metrics:
     print(f"{metric}: {metrics[metric]}")
