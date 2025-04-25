@@ -2,8 +2,6 @@
 # 0 - Import necessary libraries
 import os
 import sys
-import numpy as np
-import pandas as pd
 
 # Add the project root directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -109,5 +107,3 @@ annual_dates = rebalanced_weights_annual.index
 for i in range(0, len(annual_dates)):
     if i == 0 or (i % 12 == 0 and i < len(annual_dates)):
         print(annual_dates[i].strftime('%Y-%m-%d'))
-        
-        

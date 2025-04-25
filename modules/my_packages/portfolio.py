@@ -86,10 +86,13 @@ class EqualWeightingScheme(WeightingScheme):
         self.weights = weights.fillna(0)
         return self.weights
 
-    def rebalance_portfolio(self):
+    def rebalance_portfolio(self, transaction_cost_bp: float = 10):
         """
         Rebalance the portfolio and compute weights evolution between rebalancing dates.
         Returns rebalanced weights accounting for price drift between rebalancing dates.
+        
+        Parameters:
+        - transaction_cost_bp (float): Transaction costs in basis points (default: 10bp = 0.1%)
         """
         # First compute weights if not already done
         if self.weights is None:
@@ -111,11 +114,20 @@ class EqualWeightingScheme(WeightingScheme):
         date_position = pd.Series(range(len(all_dates)), index=all_dates)
         rebalancing_dates = all_dates[range(0, len(all_dates), self.rebal_periods)]
         
+        # Convert basis points to decimal
+        cost = transaction_cost_bp / 10000
+        
         # Loop through all dates to update weights
         for t, date in enumerate(all_dates[1:], 1):  # Start from second date
             if date in rebalancing_dates:
-                # On rebalancing dates, use the computed weights
-                self.rebalanced_weights.loc[date] = self.weights.loc[date]
+                # On rebalancing dates, calculate turnover and apply transaction costs
+                prev_weights = self.rebalanced_weights.loc[all_dates[t-1]]
+                new_weights = self.weights.loc[date]
+                turnover = abs(new_weights - prev_weights).sum()
+                transaction_cost = turnover * cost
+                
+                # Apply new weights after costs
+                self.rebalanced_weights.loc[date] = new_weights * (1 - transaction_cost)
             else:
                 # Between rebalancing dates, let weights drift with returns
                 prev_date = all_dates[t-1]
