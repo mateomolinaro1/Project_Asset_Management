@@ -143,6 +143,31 @@ class PerformanceAnalyser:
 
         return ic
 
+    def compute_max_drawdown(self) -> pd.Series:
+        """
+        Computes the maximum drawdown for each column in a returns DataFrame.
+
+        Parameters:
+        - returns (pd.DataFrame): A DataFrame of returns (each column = an asset or a portfolio).
+
+        Returns:
+        - pd.Series: Maximum drawdown for each column (negative values).
+        """
+        # Compute cumulative returns
+        cumulative_returns = (1 + self.portfolio_returns).cumprod()
+
+        # Compute running maximum
+        running_max = cumulative_returns.cummax()
+
+        # Compute drawdowns
+        drawdowns = (cumulative_returns / running_max) - 1
+
+        # Compute maximum drawdown for each column
+        max_drawdown = drawdowns.min()
+
+        return max_drawdown
+
+
     def compute_metrics(self):
         """Compute the performance metrics of the strategy"""
         freq_mapping = {'d': 252, 'w': 52, 'm': 12, 'y': 1}
@@ -162,14 +187,12 @@ class PerformanceAnalyser:
         sharpe_ratio = annualized_return / volatility
 
         # Maximum drawdown
-        rolling_max = self.cumulative_performance.cummax()
-        drawdown = (self.cumulative_performance / rolling_max) - 1
-        max_drawdown = drawdown.min()
+        max_drawdown = self.compute_max_drawdown()
 
         return {
             'total_return': total_return,
             'annualized_return': annualized_return,
-            'volatility': volatility,
-            'sharpe_ratio': sharpe_ratio,
-            'max_drawdown': max_drawdown
+            'annualized_volatility': volatility.values[0],
+            'annualized_sharpe_ratio': sharpe_ratio.values[0],
+            'max_drawdown': max_drawdown.values[0]
         }

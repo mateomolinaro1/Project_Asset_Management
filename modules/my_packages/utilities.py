@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 from typing import Union, Tuple
+from sklearn.linear_model import LinearRegression
 import warnings
 
 def compute_percentiles(df: pd.DataFrame, percentiles: Tuple[int, int]):
@@ -183,4 +184,55 @@ def rolling_sharpe_ratio(df_returns:pd.DataFrame,
         df_sharpe_ratios.iloc[i_end,:] = sharpe_ratio.values
 
     return df_sharpe_ratios
+
+def compute_idiosyncratic_returns(df_assets:pd.DataFrame, df_factors:pd.DataFrame, window_regression:int):
+    """
+    Computes the idiosyncratic returns of the assets using a rolling regression.
+
+    Args:
+        df_assets (pd.DataFrame): DataFrame of asset returns.
+        df_factors (pd.DataFrame): DataFrame of factor returns.
+        window_regression (int): Window size for the rolling regression.
+    """
+    # Check inputs
+    if not isinstance(df_assets, pd.DataFrame):
+        raise TypeError("The `df_assets` parameter must be a pandas DataFrame.")
+    if not isinstance(df_factors, pd.DataFrame):
+        raise TypeError("The `df_factors` parameter must be a pandas DataFrame.")
+    if not df_assets.shape[0] == df_factors.shape[0]:
+        raise ValueError("The number of rows in df_assets and df_factors must be equal.")
+    if not df_assets.index.equals(df_factors.index):
+        raise ValueError("The indices of df_assets and df_factors must be equal.")
+    if window_regression > df_assets.shape[0]:
+        raise ValueError("window_regression cannot be greater than the nb of rows in df.")
+
+    # Perform rolling regression
+    residuals = pd.DataFrame(data=np.nan, index=df_assets.index, columns=df_assets.columns)
+    for col_idx,col in enumerate(df_assets.columns):
+        print(f"Working on column {col} ({col_idx+1}/{df_assets.shape[1]})")
+        for i in range(window_regression, df_assets.shape[0]):
+            print(f"Working on row {i} ({i+1}/{df_assets.shape[0]})")
+            # Get the current window of data
+            y = df_assets.iloc[i-window_regression:i,col_idx]
+            x = df_factors.iloc[i-window_regression:i]
+
+            # Check presence of NaN values
+            merged_yx = pd.merge(y, x, left_index=True, right_index=True, how='inner')
+            merged_yx = merged_yx.dropna()
+            # Check if we have enough data points for regression
+            # If not, skip this iteration
+            if merged_yx.shape[0] < 2:
+                continue
+            y_cleaned = merged_yx.iloc[:,0].values.reshape(-1,1)
+            x_cleaned = merged_yx.iloc[:,1:].values
+
+            # Perform regression
+            model = LinearRegression()
+            model.fit(x_cleaned, y_cleaned)
+            # Get residuals
+            res = y_cleaned - model.predict(x_cleaned)
+            # Store residuals
+            residuals.iloc[i, col_idx] = res[-1][0]
+
+    return residuals
 

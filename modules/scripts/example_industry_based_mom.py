@@ -8,14 +8,17 @@ from modules.my_packages.portfolio import EqualWeightingScheme, NaiveRiskParity
 from modules.my_packages.backtest import Backtest
 from modules.my_packages.analysis import PerformanceAnalyser
 from modules.my_packages import utilities
+import pandas as pd
+import numpy as np
 
 # 1 - Setting working directory, Data loading and cleaning
 # Setting the working directory
-# file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data.xlsx")
+file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data_short.xlsx")
 # file_path = utilities.set_working_directory(folder="data", file="data.xlsx")
 
 # Data Downloading
-data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
+data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
+# data_source = ExcelDataSource(file_path=r".\data\data.xlsx", sheet_name="data")
 data_manager = DataManager(data_source=data_source,
                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
                            rebase_prices=True,
@@ -27,6 +30,19 @@ data_manager.clean_data()
 data_manager.compute_returns()
 data_manager.account_implementation_lags()
 
+# Industry data
+np.random.seed(42)
+industries = ['IT', 'Financials', 'Healthcare', 'Industrials', 'ConsumerDiscretionary',
+              'ConsumerStaples', 'CommunicationServices', 'Energy', 'Materials', 'Utilities', 'RealEstate']
+
+returns = data_manager.returns
+industries_per_action = np.random.choice(industries, size=returns.shape[1])
+industry_assignments = pd.DataFrame(
+    np.tile(industries_per_action, (returns.shape[0], 1)),
+    index=returns.index,
+    columns=returns.columns
+)
+
 # 2 - Strategy creation - Cross-sectional momentum
 cs_mom = CrossSectionalPercentiles(prices=data_manager.cleaned_data,
                                    returns=data_manager.returns,
@@ -36,7 +52,9 @@ cs_mom = CrossSectionalPercentiles(prices=data_manager.cleaned_data,
                                                            'rolling_window': 12+1,
                                                            'nb_period_to_exclude': 1,
                                                            'exclude_last_period': True},
-                                   percentiles_winsorization=(1,99)
+                                   percentiles_portfolios=(10,90),
+                                   percentiles_winsorization=(1,99),
+                                   industry_segmentation=industry_assignments
                                    )
 cs_mom.compute_signals_values()
 cs_mom.compute_signals()
