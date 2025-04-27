@@ -5,9 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="first push 23/04/2025 17:41 by Matéo Molinaro">
+      <change afterPath="$PROJECT_DIR$/modules/scripts/example_idio_mom.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/modules/scripts/example_sharpe_ratio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/my_packages/signal_utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/signal_utilities.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/my_packages/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/utilities.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/scripts/example.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/scripts/examplerebal.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example_rebal.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,21 +28,21 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "mateomolinaro1"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;mateomolinaro1&quot;
   }
-}]]></component>
+}</component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
-    "url": "https://github.com/mateomolinaro1/Project_Asset_Management",
+    "url": "https://github.com/mateomolinaro1/Project_Asset_Management.git",
     "accountId": "36aa67a3-9703-404a-8e2a-79e97ac3eabf"
   }
 }]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 7
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
   <component name="ProjectId" id="2w85I3qJhqq6JHukIZlJ47ks19l" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
@@ -47,8 +51,11 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.example_idio_mom.executor": "Debug",
+    "Python.example_sharpe_ratio.executor": "Debug",
+    "Python.utilities.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/mateo/Code/ISXA/projet/Project_Investment_Solutions_Cross_Assets_final"
   }
 }]]></component>
@@ -106,5 +113,16 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first push 23/04/2025 17:41 by Matéo Molinaro" />
     <option name="LAST_COMMIT_MESSAGE" value="first push 23/04/2025 17:41 by Matéo Molinaro" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/modules/scripts/example_sharpe_ratio.py</url>
+          <line>26</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

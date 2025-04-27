@@ -3,86 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 from typing import Union, Tuple
-
-# def set_working_directory(folder: str, file: str):
-#     """
-#     Returns an absolute path to a file in a given folder relative to the main script's location.
-#
-#     Args:
-#         folder (str): The folder containing the data.
-#         file (str): The name of the data file.
-#
-#     Returns:
-#         str: Absolute path to the target file.
-#     """
-#     try:
-#         main_script = sys.modules["__main__"].__file__
-#         base_dir = os.path.dirname(os.path.abspath(main_script))
-#     except (AttributeError, KeyError):
-#         base_dir = os.getcwd()  # fallback: console/debug mode
-#
-#     return os.path.join(base_dir, folder, file)
-# def set_working_directory(folder: str, file: str) -> str:
-#     """
-#     Returns an absolute path to a file in a given folder relative to the main script's location.
-#     """
-#     try:
-#         main_script = sys.modules["__main__"].__file__
-#         base_dir = os.path.dirname(os.path.abspath(main_script))
-#     except (AttributeError, KeyError):
-#         # Debug mode or interactive mode fallback
-#         print("[DEBUG] Falling back to current working directory (os.getcwd())")
-#         base_dir = os.getcwd()
-#
-#     return os.path.join(base_dir, folder, file)
-#     def set_working_directory(folder: str, file: str) -> str:
-#         """
-#         Returns an absolute path to a file in a given folder relative to the main script's location.
-#         Handles various execution modes (Run, Debug, Console).
-#         """
-#         try:
-#             # Try to retrieve the file of the main script
-#             main_script = sys.modules["__main__"].__file__
-#             base_dir = os.path.dirname(os.path.abspath(main_script))
-#         except (AttributeError, KeyError):
-#             # If fail (interactive console or PyCharm Debug), use le CWD
-#             print("[INFO] Fallback: using current working directory (os.getcwd())")
-#             base_dir = os.getcwd()
-#
-#         # Return the full path
-#         absolute_path = os.path.join(base_dir, folder, file)
-#         print(f"[DEBUG] Path resolved to: {absolute_path}")
-#         return absolute_path
-def find_project_root(marker_files="main.py") -> str:
-    """
-    Remonte dans l'arborescence pour trouver la racine du projet en cherchant un des fichiers marqueurs.
-    """
-    current_dir = os.getcwd()
-    while True:
-        if any(os.path.exists(os.path.join(current_dir, marker)) for marker in marker_files):
-            return current_dir
-        parent_dir = os.path.dirname(current_dir)
-        if parent_dir == current_dir:
-            # On est à la racine du disque
-            raise FileNotFoundError("Impossible de trouver la racine du projet.")
-        current_dir = parent_dir
-
-def set_working_directory(folder: str, file: str) -> str:
-    """
-    Returns an absolute path to a file in a given folder relative to the main script's location.
-    Handles various execution modes (Run, Debug, Console).
-    """
-    try:
-        main_script = sys.modules["__main__"].__file__
-        #base_dir = os.path.dirname(os.path.abspath(main_script))
-        base_dir = find_project_root()
-    except (AttributeError, KeyError):
-        print("[INFO] Fallback: using project root via marker file.")
-        base_dir = find_project_root()
-
-    absolute_path = os.path.join(base_dir, folder, file)
-    print(f"[DEBUG] Path resolved to: {absolute_path}")
-    return absolute_path
+import warnings
 
 def compute_percentiles(df: pd.DataFrame, percentiles: Tuple[int, int]):
     if not isinstance(df, pd.DataFrame):
@@ -198,3 +119,68 @@ def winsorize_dataframe(df:pd.DataFrame, percentiles:Tuple[int, int]=(1,99), axi
         return row_or_col.clip(lower=lower, upper=upper)
 
     return df.apply(winsorize_row_or_col, axis=axis)
+
+def compute_sharpe_ratio(df_returns:pd.DataFrame,
+                         risk_free_rate:Union[float, pd.DataFrame]=0.0,
+                         frequency:str='daily') -> Union[pd.DataFrame,float]:
+    """ Computes the Sharpe ratio of a DataFrame of returns."""
+    # Input checks
+    if not isinstance(df_returns, pd.DataFrame):
+        raise ValueError("df_returns must be a pandas DataFrame.")
+    if not isinstance(risk_free_rate, (float, pd.DataFrame)):
+        raise ValueError("risk_free_rate must be a float or a pandas DataFrame.")
+    if not isinstance(frequency, str) and frequency not in ['daily', 'weekly', 'monthly', 'yearly']:
+        raise ValueError("frequency must be either 'daily', 'weekly', 'monthly' or 'yearly.")
+
+    # Frequency conversion
+    if frequency == 'daily':
+        freq = 252
+    elif frequency == 'weekly':
+        freq = 52
+    elif frequency == 'monthly':
+        freq = 12
+    elif frequency == 'yearly':
+        freq = 1
+
+    # Compute excess returns
+    if isinstance(risk_free_rate, pd.DataFrame):
+        excess_returns = df_returns.values - risk_free_rate.values
+        excess_returns = pd.DataFrame(data=excess_returns, index=df_returns.index, columns=df_returns.columns)
+    else:
+        excess_returns = df_returns - risk_free_rate
+
+    # Compute mean and standard deviation nd avoiding warnings in the presence of nan
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        mean_excess_returns = excess_returns.mean(axis=0, skipna=True)
+        std_excess_returns = excess_returns.std(axis=0, skipna=True)
+
+    # Compute Sharpe ratio
+    sharpe_ratio = mean_excess_returns / std_excess_returns
+    # Annualize the Sharpe ratio
+    sharpe_ratio = sharpe_ratio * np.sqrt(freq)
+
+    return pd.DataFrame(sharpe_ratio).T
+
+def rolling_sharpe_ratio(df_returns:pd.DataFrame,
+                         rolling_window:int,
+                         risk_free_rate:Union[float, pd.DataFrame]=0.0,
+                         frequency:str='daily') -> Union[pd.DataFrame,float]:
+
+    if not isinstance(rolling_window, int):
+        raise ValueError("rolling_window must be an int.")
+    if rolling_window <= 0:
+        raise ValueError("rolling_window must be greater than 0.")
+    if df_returns.shape[0] < rolling_window:
+        raise ValueError("rolling_window must be less than the number of rows in df_returns.")
+
+    df_sharpe_ratios = pd.DataFrame(data=np.nan, index=df_returns.index, columns=df_returns.columns)
+    for i_end in range(rolling_window, df_returns.shape[0]):
+        df_returns_local = df_returns.iloc[i_end-rolling_window:i_end,:]
+        sharpe_ratio = compute_sharpe_ratio(df_returns=df_returns_local,
+                                            risk_free_rate=risk_free_rate,
+                                            frequency=frequency)
+        df_sharpe_ratios.iloc[i_end,:] = sharpe_ratio.values
+
+    return df_sharpe_ratios
+
