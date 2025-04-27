@@ -174,3 +174,4 @@ for key_strat, value_signal_function in strats.items():
                 # We can also store the metrics
                 for metric in metrics.keys():
                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
+
