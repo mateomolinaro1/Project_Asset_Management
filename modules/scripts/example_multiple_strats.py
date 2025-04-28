@@ -9,6 +9,8 @@ from modules.my_packages import utilities
 import pandas as pd
 import numpy as np
 import os
+import pickle
+import copy
 
 # Data Downloading
 # Assets
@@ -61,6 +63,14 @@ strats = {'cs_mom_lo': Momentum.rolling_momentum,
           'cs_sr_lo' : utilities.rolling_sharpe_ratio,
           'cs_idio_sr_lo' : RollingMetrics.rolling_idiosyncratic_sharpe_ratio
           }
+
+start_dates = {'cs_mom_lo': [],
+               'cs_idio_mom_lo': [],
+               'cs_reversal_lo': [],
+               'cs_idio_reversal_lo': [],
+               'cs_sr_lo' : [],
+               'cs_idio_sr_lo' : []}
+
 strats_args = {'cs_mom_lo': {'df': data_manager.returns,
                              'nb_period': 12,
                              'rolling_window': 12+1,
@@ -124,7 +134,10 @@ for strat in strats.keys():
 
 # Cross-sectional strategies
 for key_strat, value_signal_function in strats.items():
-    print(f"working on strategy:{key_strat}")
+    print(
+        f"-----------------------------------------------------------------------------------------------------------")
+    print(
+        f"---------------------------working on strategy:{key_strat}-------------------------------------------------")
     # Step 1 - Strategy Creation
     strategy = CrossSectionalPercentiles(prices=data_manager.cleaned_data,
                                          returns=data_manager.returns,
@@ -135,11 +148,11 @@ for key_strat, value_signal_function in strats.items():
     strategy.compute_signals_values()
 
     for key_pct, value_pct in percentiles.items():
-        print(f"working on percentile:{key_pct}")
+        print(f"-------------------------working on percentile:{key_pct}-----------------------------------------------")
         for industry in industry_segmentation:
-            print(f"working on industry:{industry}")
+            print(f"*-----------working on industry:{industry}--------------*")
             for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():
-                print(f"working on rebalancing frequency:{key_rebalancing_freq}")
+                print(f"**------working on rebalancing frequency:{key_rebalancing_freq}**------")
 
                 strategy.compute_signals(percentiles_portfolios=value_pct,
                                          percentiles_winsorization=(1,99),
@@ -156,16 +169,17 @@ for key_strat, value_signal_function in strats.items():
 
                 # Step 3 - Backtesting
                 backtest =  Backtest(returns=data_manager.aligned_returns,
-                                     weights=portfolio.weights)
+                                     weights=portfolio.weights,
+                                     strategy_name=key_strat)
                 strategy_returns = backtest.run_backtest()
 
                 # Step 4 - Performance Analysis
-                performance_analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,
-                                                           freq='m',
-                                                           zscores=strategy.signals_values,
-                                                           forward_returns=data_manager.aligned_returns)
                 analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,
-                                               freq='m')
+                                               freq='m',
+                                               percentiles=key_pct,
+                                               industries=industry,
+                                               rebal_freq=key_rebalancing_freq
+                                               )
                 metrics = analyzer.compute_metrics()
 
                 # Step 5 - Storing results
@@ -175,3 +189,68 @@ for key_strat, value_signal_function in strats.items():
                 for metric in metrics.keys():
                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
 
+                # saving cumulative perf
+                analyzer.plot_cumulative_performance(
+                    saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                    show=False,
+                    blocking=False)
+
+                # saving start dates to align all strategies and allow comparison
+                start_dates[key_strat].append((strategy_returns != 0.0).idxmax())
+
+    # Save the results
+    with open(r".\results\strategies_results\strategies_results.pickle", 'wb') as handle:
+        pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+# Recomputes the metrics for aligned strategies
+start_date = max(x for sublist in start_dates.values() for x in sublist).values[0]
+print(f"first date where strategy returns is available for all strategies is {start_date}")
+# To store new results
+strategies_results_aligned = copy.deepcopy(strategies_results)
+all_series = []
+all_series_by_strat = {strat: [] for strat in strats.keys()}
+# Now, we'll crop the strategies from this date
+for key_strat, value_signal_function in strats.items():
+    for key_pct, value_pct in percentiles.items():
+        for industry in industry_segmentation:
+            for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():
+                strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = \
+                    strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'].loc[
+                        start_date:]
+
+                # Recompute the metrics
+                analyzer = PerformanceAnalyser(portfolio_returns=strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'],
+                                               freq='m',
+                                               percentiles=key_pct,
+                                               industries=industry,
+                                               rebal_freq=key_rebalancing_freq
+                                               )
+                metrics = analyzer.compute_metrics()
+                # Store the metrics
+                for metric in metrics.keys():
+                    strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
+
+                # Create dataframes of all the strategies within a given strategy
+                renamed_series_by_strat = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
+                    'strategy_returns'].copy()
+                renamed_series_by_strat.name = f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"
+                all_series_by_strat[key_strat].append(renamed_series_by_strat)
+
+                # Create a dataframe of all the strategies returns to plot cumulative perf
+                renamed_series = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
+                    'strategy_returns'].copy()
+                renamed_series.name = f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"
+                all_series.append(renamed_series)
+
+# Concatenate all the series into a dataframe
+all_strategies_returns_by_strat = {strat_key: pd.concat(all_series_by_strat[strat_key], axis=1) for strat_key in all_series_by_strat.keys()}
+# Set the first line to 0.0 for each strat
+for strat_key, df in all_strategies_returns_by_strat.items():
+    df.iloc[0, :] = 0.0
+
+all_strategies_returns = pd.concat(all_series, axis=1)
+all_strategies_returns.iloc[0,:] = 0.0 # because all the strategies must start at 0.0
+import matplotlib.pyplot as plt
+plt.plot((1+all_strategies_returns).cumprod()-1)
+plt.show(block=True)

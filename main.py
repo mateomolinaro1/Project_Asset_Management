@@ -7,6 +7,7 @@ from modules.my_packages.backtest import Backtest
 from modules.my_packages.analysis import PerformanceAnalyser
 from modules.my_packages import utilities
 import pandas as pd
+import pickle
 import numpy as np
 import os
 
@@ -118,7 +119,8 @@ for strat in strats.keys():
 
 # Cross-sectional strategies
 for key_strat, value_signal_function in strats.items():
-    print(f"working on strategy:{key_strat}")
+    print(f"-----------------------------------------------------------------------------------------------------------")
+    print(f"---------------------------working on strategy:{key_strat}-------------------------------------------------")
     # Step 1 - Strategy Creation
     strategy = CrossSectionalPercentiles(prices=data_manager.cleaned_data,
                                          returns=data_manager.returns,
@@ -129,11 +131,11 @@ for key_strat, value_signal_function in strats.items():
     strategy.compute_signals_values()
 
     for key_pct, value_pct in percentiles.items():
-        print(f"working on percentile:{key_pct}")
+        print(f"-------------------------working on percentile:{key_pct}-----------------------------------------------")
         for industry in industry_segmentation:
-            print(f"working on industry:{industry}")
+            print(f"*-----------working on industry:{industry}--------------*")
             for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():
-                print(f"working on rebalancing frequency:{key_rebalancing_freq}")
+                print(f"**------working on rebalancing frequency:{key_rebalancing_freq}**------")
 
                 strategy.compute_signals(percentiles_portfolios=value_pct,
                                          percentiles_winsorization=(1,99),
@@ -150,16 +152,17 @@ for key_strat, value_signal_function in strats.items():
 
                 # Step 3 - Backtesting
                 backtest =  Backtest(returns=data_manager.aligned_returns,
-                                     weights=portfolio.weights)
+                                     weights=portfolio.weights,
+                                     strategy_name=key_strat)
                 strategy_returns = backtest.run_backtest()
 
                 # Step 4 - Performance Analysis
-                performance_analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,
-                                                           freq='m',
-                                                           zscores=strategy.signals_values,
-                                                           forward_returns=data_manager.aligned_returns)
                 analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,
-                                               freq='m')
+                                               freq='m',
+                                               percentiles=key_pct,
+                                               industries=industry,
+                                               rebal_freq=key_rebalancing_freq
+                                               )
                 metrics = analyzer.compute_metrics()
 
                 # Step 5 - Storing results
@@ -168,6 +171,17 @@ for key_strat, value_signal_function in strats.items():
                 # We can also store the metrics
                 for metric in metrics.keys():
                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
+                # Saving cumulative performance plot
+                analyzer.plot_cumulative_performance(saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                                                                 show=False,
+                                                                 blocking=False)
+
+    # Save the results
+    with open(r".\results\strategies_results\strategies_results.pickle", 'wb') as handle:
+        pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # rebalancement à mettre, avec premier date comme date de rebal
 # compter les couts de transac
+# sauvegarder start date pour aligner les rendements
+# sauvegarder les rendements dans un fichier excel
+# puis faire les graphiques et performance sur la période commune

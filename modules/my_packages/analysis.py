@@ -1,14 +1,23 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from typing import Union
+
+from matplotlib.pyplot import savefig
+
 
 class PerformanceAnalyser:
     """Class to analyse the performance of a strategy"""
-    def __init__(self, portfolio_returns:pd.DataFrame, freq:str, zscores:Union[None, pd.DataFrame]=None,
-                 forward_returns:Union[None, pd.DataFrame]=None):
+    def __init__(self, portfolio_returns:pd.DataFrame,
+                 freq:str, zscores:Union[None, pd.DataFrame]=None,
+                 forward_returns:Union[None, pd.DataFrame]=None,
+                 percentiles:str="",
+                 industries:str="",
+                 rebal_freq:str=""):
         self.portfolio_returns = portfolio_returns
         self.cumulative_performance = None
         self.equity_curve = None
+        self.metrics = None
         if freq not in ['d', 'w', 'm', 'y']:
             raise ValueError("freq must be in ['d', 'w', 'm', 'y'].")
         self.freq = freq
@@ -26,6 +35,9 @@ class PerformanceAnalyser:
             raise ValueError("forward_returns must be a pandas dataframe.")
         else:
             pass
+        self.percentiles = percentiles
+        self.industries = industries
+        self.rebal_freq = rebal_freq
 
 
     def compute_cumulative_performance(self, compound_type:str="geometric"):
@@ -196,3 +208,30 @@ class PerformanceAnalyser:
             'annualized_sharpe_ratio': sharpe_ratio.values[0],
             'max_drawdown': max_drawdown.values[0]
         }
+
+    def plot_cumulative_performance(self,
+                                    saving_path:str=None,
+                                    show:bool=False,
+                                    blocking:bool=True):
+        """Plot the cumulative performance of the strategy"""
+        if self.cumulative_performance is None:
+            self.compute_cumulative_performance()
+        if self.metrics is None:
+            self.metrics = self.compute_metrics()
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(self.cumulative_performance.index, self.cumulative_performance, label=f"{self.portfolio_returns.columns[0]}_returns")
+        plt.title(f"Cumulative Performance of strategy:{self.portfolio_returns.columns[0]} - {self.percentiles} - {self.industries} - {self.rebal_freq} \n"
+                  f"Performance Metrics: ann. ret={self.metrics['annualized_return']:.2%}; ann. vol={self.metrics['annualized_volatility']:.2%}; ann. SR={self.metrics['annualized_sharpe_ratio']:.2f}; max. dd={self.metrics['max_drawdown']:.2%}",
+                  fontsize=10)
+        plt.xlabel("Date")
+        plt.ylabel("Cumulative Performance")
+        plt.legend()
+        plt.grid()
+
+        if saving_path is not None:
+            plt.savefig(saving_path, bbox_inches='tight')
+        if show is not None:
+            plt.show(block=blocking)
+
+        plt.close()

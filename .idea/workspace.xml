@@ -5,8 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="multiple strats">
+      <change afterPath="$PROJECT_DIR$/modules/scripts/example_rebal_example.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/my_packages/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/my_packages/backtest.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/backtest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/my_packages/portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/scripts/example.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/scripts/example_multiple_strats.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example_multiple_strats.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -47,6 +52,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.example.executor": "Debug",
     "Python.example_idio_mom.executor": "Debug",
     "Python.example_industry_based_mom.executor": "Debug",
     "Python.example_multiple_strats.executor": "Debug",
@@ -121,7 +127,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745764779141</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="multiple strats">
+      <option name="closed" value="true" />
+      <created>1745786611122</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1745786611122</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

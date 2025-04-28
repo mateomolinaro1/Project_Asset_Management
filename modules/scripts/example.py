@@ -11,11 +11,11 @@ from modules.my_packages import utilities
 
 # 1 - Setting working directory, Data loading and cleaning
 # Setting the working directory
-# file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data.xlsx")
-# file_path = utilities.set_working_directory(folder="data", file="data.xlsx")
+file_path = os.path.join(r"C:\Users\mateo\Code\AM\Projet_V2", "data", "data_short.xlsx")
 
 # Data Downloading
-data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
+# data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
+data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
 data_manager = DataManager(data_source=data_source,
                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
                            rebase_prices=True,
@@ -48,19 +48,34 @@ portfolio = EqualWeightingScheme(returns=data_manager.returns,
                                  portfolio_type='long_only'
                                  )
 portfolio.compute_weights()
-# portfolio.rebalance_portfolio()
+#portfolio.rebalance_portfolio()
 
 # 4 - Backtesting
 backtest =  Backtest(returns=data_manager.aligned_returns,
-                     weights=portfolio.weights)
+                     weights=portfolio.weights,
+                     strategy_name="cs_mom")
 strategy_returns = backtest.run_backtest()
 
 # 5 - Performance analysis
 performance_analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,
                                            freq='m',
                                            zscores=cs_mom.signals_values,
-                                           forward_returns=data_manager.aligned_returns)
+                                           forward_returns=data_manager.aligned_returns,
+                                           percentiles="deciles",
+                                           industries="AllIndustries",
+                                           rebal_freq="Monthly")
 
 metrics = performance_analyzer.compute_metrics()
 for metric in metrics:
     print(f"{metric}: {metrics[metric]}")
+
+performance_analyzer.plot_cumulative_performance(saving_path=r".\results\plots\cumulative_returns.png",
+                                                 show=False,
+                                                 blocking=False)
+
+# import pickle
+# with open(r".\results\plots\strategy_returns.pickle", "wb") as f:
+#     pickle.dump(strategy_returns, f)
+#
+# with open(r".\results\plots\strategy_returns.pickle", "rb") as f:
+#     strategy_returns = pickle.load(f)
