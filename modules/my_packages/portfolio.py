@@ -14,6 +14,7 @@ class WeightingScheme(ABC):
         self.portfolio_type = portfolio_type
         self.weights = None
         self.rebalanced_weights = None
+        self.returns_after_fees = None 
 
     @abstractmethod
     def compute_weights(self):
@@ -112,6 +113,7 @@ class EqualWeightingScheme(WeightingScheme):
         # If no rebalancing period specified or rebalancing at every period, return original weights
         if self.rebal_periods is None or self.rebal_periods == 0:
             strategy_returns = (self.weights * self.returns).sum(axis=1)
+            self.returns_after_fees = strategy_returns
             return self.weights, strategy_returns
         
         # Initialize rebalanced weights and returns
@@ -163,6 +165,7 @@ class EqualWeightingScheme(WeightingScheme):
                 self.rebalanced_weights.loc[date] = drifted_weights
                 strategy_returns.loc[date] = (prev_weights * self.returns.loc[date]).sum()
         
+        self.returns_after_fees = strategy_returns
         return self.rebalanced_weights.fillna(0.0), strategy_returns
 
 class NaiveRiskParity(WeightingScheme):
