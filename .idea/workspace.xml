@@ -5,10 +5,151 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="avant derniere version insh. Reste à faire: # regarder pq 0.0 au début des rendements, surement la premiere date de rebal&#10;# 2 dates avec 0.0 à la fin aussi&#10;# mettre le bench sur les graphiques individuels&#10;# inclure les couts de transac dans les rendements de la stratégie (dans backtest)">
-      <change afterPath="$PROJECT_DIR$/modules/scripts/exemple_rebal.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/modules/scripts/rebalancing_comparison.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/my_packages/portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/portfolio.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/scripts/example.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_deciles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quartiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_mom_lo/cumulative_returns_cs_idio_mom_lo_quintiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_deciles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quartiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_reversal_lo/cumulative_returns_cs_idio_reversal_lo_quintiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_deciles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quartiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_idio_sr_lo/cumulative_returns_cs_idio_sr_lo_quintiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_deciles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quartiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_mom_lo/cumulative_returns_cs_mom_lo_quintiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_deciles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quartiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_reversal_lo/cumulative_returns_cs_reversal_lo_quintiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_deciles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quartiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_AllIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_AllIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_AllIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_AllIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_BestInIndustries_monthly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_BestInIndustries_quarterly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_BestInIndustries_semi_annually.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/plots/cs_sr_lo/cumulative_returns_cs_sr_lo_quintiles_BestInIndustries_yearly.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/strategies_results/strategies_results.pickle" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,12 +172,12 @@
     &quot;assignee&quot;: &quot;mateomolinaro1&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mateomolinaro1/Project_Asset_Management.git",
-    "accountId": "36aa67a3-9703-404a-8e2a-79e97ac3eabf"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mateomolinaro1/Project_Asset_Management.git&quot;,
+    &quot;accountId&quot;: &quot;36aa67a3-9703-404a-8e2a-79e97ac3eabf&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -56,7 +197,7 @@
     "Python.grouping.executor": "Debug",
     "Python.utilities.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "Merging main",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/mateo/Code/ISXA/projet/Project_Investment_Solutions_Cross_Assets_final",
     "settings.editor.selected.configurable": "preferences.editor"
   }
