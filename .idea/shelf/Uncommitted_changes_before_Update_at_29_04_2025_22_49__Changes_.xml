@@ -1,0 +1,9 @@
+<changelist name="Uncommitted_changes_before_Update_at_29_04_2025_22_49_[Changes]" date="1745959755612" recycled="false" toDelete="true">
+  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2025_22_49_[Changes]/shelved.patch" />
+  <option name="DESCRIPTION" value="Uncommitted changes before Update at 29/04/2025 22:49 [Changes]" />
+  <binary>
+    <option name="BEFORE_PATH" value="results/strategies_results/strategies_results.pickle" />
+    <option name="AFTER_PATH" value="results/strategies_results/strategies_results.pickle" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_29_04_2025_22_49_[Changes]/strategies_results.pickle" />
+  </binary>
+</changelist>

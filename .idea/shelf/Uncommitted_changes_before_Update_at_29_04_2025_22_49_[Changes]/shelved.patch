@@ -1,0 +1,634 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Main script\r\nfrom modules.my_packages.data import ExcelDataSource, DataManager\r\nfrom modules.my_packages.strategies import CrossSectionalPercentiles\r\nfrom modules.my_packages.signal_utilities import Momentum, RollingMetrics\r\nfrom modules.my_packages.portfolio import EqualWeightingScheme, NaiveRiskParity\r\nfrom modules.my_packages.backtest import Backtest\r\nfrom modules.my_packages.analysis import PerformanceAnalyser\r\nfrom modules.my_packages import utilities\r\nimport pandas as pd\r\nimport pickle\r\nimport numpy as np\r\nimport os\r\n\r\n# Data Downloading\r\n# Assets\r\n# file_path = os.path.join(r\"C:\\Users\\mateo\\Code\\AM\\Projet_V2\", \"data\", \"data_returns.xlsx\")\r\n# data_source = ExcelDataSource(file_path=file_path, sheet_name=\"data\")\r\n\r\ndata_source = ExcelDataSource(file_path=r\".\\data\\data_returns.xlsx\", sheet_name=\"data\")\r\ndata_manager = DataManager(data_source=data_source,\r\n                           max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill\r\n                           rebase_prices=True,\r\n                           n_implementation_lags=1 # always set to 1 because returns at time t, which are from t-1 to t, must be multiplied by returns\r\n                           # at time t+1, which is from t to t+1 to get the strategy returns (backtest) and avoid look-ahead bias\r\n                           )\r\ndata_manager.load_data()\r\n# data_manager.clean_data()\r\n# data_manager.compute_returns()\r\ndata_manager.returns = data_manager.raw_data\r\ndata_manager.account_implementation_lags()\r\n\r\n# Factors (market)\r\n# file_path = os.path.join(r\"C:\\Users\\mateo\\Code\\AM\\Projet_v2\", \"data\", \"msci_prices.xlsx\")\r\n# data_source_factors = ExcelDataSource(file_path=file_path, sheet_name=\"data\")\r\ndata_source_factors = ExcelDataSource(file_path=r\".\\data\\msci_prices.xlsx\", sheet_name=\"data\")\r\n\r\ndata_manager_factors = DataManager(data_source=data_source_factors,\r\n                           max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill\r\n                           rebase_prices=True,\r\n                           n_implementation_lags=1 # always set to 1 because returns at time t, which are from t-1 to t, must be multiplied by returns\r\n                           # at time t+1, which is from t to t+1 to get the strategy returns (backtest) and avoid look-ahead bias\r\n                           )\r\ndata_manager_factors.load_data()\r\ndata_manager_factors.clean_data()\r\ndata_manager_factors.compute_returns()\r\n\r\n# Industry\r\nindustries_classification = pd.read_excel(r\".\\data\\industry_classification.xlsx\", index_col=0, sheet_name=\"data\")\r\n\r\n# Strategies setting\r\nstrats = {'cs_mom_lo': Momentum.rolling_momentum,\r\n          'cs_idio_mom_lo': Momentum.rolling_idiosyncratic_momentum,\r\n          'cs_reversal_lo': Momentum.rolling_momentum,\r\n          'cs_idio_reversal_lo': Momentum.rolling_idiosyncratic_momentum,\r\n          'cs_sr_lo' : utilities.rolling_sharpe_ratio,\r\n          'cs_idio_sr_lo' : RollingMetrics.rolling_idiosyncratic_sharpe_ratio\r\n          }\r\n\r\nstrats_args = {'cs_mom_lo': {'df': data_manager.returns,\r\n                             'nb_period': 12,\r\n                             'rolling_window': 12+1,\r\n                             'nb_period_to_exclude': 1,\r\n                             'exclude_last_period': True},\r\n               'cs_idio_mom_lo': {'df_assets': data_manager.returns,\r\n                                  'df_factors': data_manager_factors.returns,\r\n                                  'nb_period': 12,\r\n                                  'rolling_window': 12+1,\r\n                                  'nb_period_to_exclude': 1,\r\n                                  'exclude_last_period': True},\r\n               'cs_reversal_lo': {'df': data_manager.returns,\r\n                             'nb_period': 1,\r\n                             'rolling_window': 1+1,\r\n                             'nb_period_to_exclude': None,\r\n                             'exclude_last_period': False},\r\n               'cs_idio_reversal_lo': {'df_assets': data_manager.returns,\r\n                                  'df_factors': data_manager_factors.returns,\r\n                                  'nb_period': 1,\r\n                                  'rolling_window': 1+1,\r\n                                  'nb_period_to_exclude': None,\r\n                                  'exclude_last_period': False},\r\n               'cs_sr_lo' : {'df_returns': data_manager.returns,\r\n                             'rolling_window': 12,\r\n                             'risk_free_rate': 0.0,\r\n                             'frequency': 'monthly'},\r\n               'cs_idio_sr_lo' : {'df_assets': data_manager.returns,\r\n                                  'df_factors': data_manager_factors.returns,\r\n                                  'rolling_window_sharpe_ratio': 12,\r\n                                  'rolling_window_idiosyncratic': 12,\r\n                                  'risk_free_rate': 0.0,\r\n                                  'frequency': 'monthly'}\r\n               }\r\n\r\npercentiles = {'deciles': (10,90),\r\n               'quintiles': (20,80),\r\n               'quartiles': (25,75)}\r\n\r\nindustry_segmentation = ['AllIndustries', 'BestInIndustries']\r\n\r\nrebalancing_freqs = {'monthly': 1,\r\n                     'quarterly': 3,\r\n                     'semi_annually': 6,\r\n                     'yearly': 12,\r\n                     }\r\n\r\nmetrics = ['total_return', 'annualized_return', 'annualized_volatility', 'annualized_sharpe_ratio', 'max_drawdown']\r\nstrategies_results = {}\r\n\r\nfor strat in strats.keys():\r\n    strategies_results[strat] = {}\r\n    for percentile in percentiles.keys():\r\n        strategies_results[strat][percentile] = {}\r\n        for industry in industry_segmentation:\r\n            strategies_results[strat][percentile][industry] = {}\r\n            for rebalancing_freq in rebalancing_freqs.keys():\r\n                strategies_results[strat][percentile][industry][rebalancing_freq] = {}\r\n                strategies_results[strat][percentile][industry][rebalancing_freq]['strategy_returns'] = None\r\n                for metric in metrics:\r\n                    strategies_results[strat][percentile][industry][rebalancing_freq][metric] = None\r\n\r\n# Cross-sectional strategies\r\nfor key_strat, value_signal_function in strats.items():\r\n    print(f\"-----------------------------------------------------------------------------------------------------------\")\r\n    print(f\"---------------------------working on strategy:{key_strat}-------------------------------------------------\")\r\n    # Step 1 - Strategy Creation\r\n    strategy = CrossSectionalPercentiles(prices=data_manager.cleaned_data,\r\n                                         returns=data_manager.returns,\r\n                                         signal_function=value_signal_function,\r\n                                         signal_function_inputs=strats_args[key_strat],\r\n                                         )\r\n\r\n    strategy.compute_signals_values()\r\n\r\n    for key_pct, value_pct in percentiles.items():\r\n        print(f\"-------------------------working on percentile:{key_pct}-----------------------------------------------\")\r\n        for industry in industry_segmentation:\r\n            print(f\"*-----------working on industry:{industry}--------------*\")\r\n            for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():\r\n                print(f\"**------working on rebalancing frequency:{key_rebalancing_freq}**------\")\r\n\r\n                strategy.compute_signals(percentiles_portfolios=value_pct,\r\n                                         percentiles_winsorization=(1,99),\r\n                                         industry_segmentation=industries_classification if industry == 'BestInIndustries' else None)\r\n\r\n                # Step 2 - Portfolio Construction\r\n                portfolio = EqualWeightingScheme(returns=data_manager.returns,\r\n                                                 signals=strategy.signals,\r\n                                                 rebal_periods=value_rebalancing_freq,\r\n                                                 portfolio_type='long_only'\r\n                                                 )\r\n                portfolio.compute_weights()\r\n                #portfolio.rebalance_portfolio()\r\n\r\n                # Step 3 - Backtesting\r\n                backtest =  Backtest(returns=data_manager.aligned_returns,\r\n                                     weights=portfolio.weights,\r\n                                     strategy_name=key_strat)\r\n                strategy_returns = backtest.run_backtest()\r\n\r\n                # Step 4 - Performance Analysis\r\n                analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,\r\n                                               freq='m',\r\n                                               percentiles=key_pct,\r\n                                               industries=industry,\r\n                                               rebal_freq=key_rebalancing_freq\r\n                                               )\r\n                metrics = analyzer.compute_metrics()\r\n\r\n                # Step 5 - Storing results\r\n                print(f\"storing results for strategy:{key_strat}, percentile:{key_pct}, industry:{industry}, rebalancing frequency:{key_rebalancing_freq}\")\r\n                strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = strategy_returns\r\n                # We can also store the metrics\r\n                for metric in metrics.keys():\r\n                    strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]\r\n                # Saving cumulative performance plot\r\n                analyzer.plot_cumulative_performance(saving_path=fr\".\\results\\plots\\{key_strat}\\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png\",\r\n                                                                 show=False,\r\n                                                                 blocking=False)\r\n\r\n    # Save the results\r\n    with open(r\".\\results\\strategies_results\\strategies_results.pickle\", 'wb') as handle:\r\n        pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)\r\n\r\n# rebalancement à mettre, avec premier date comme date de rebal\r\n# compter les couts de transac\r\n# sauvegarder start date pour aligner les rendements\r\n# sauvegarder les rendements dans un fichier excel\r\n# puis faire les graphiques et performance sur la période commune\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	(revision fce8ee6ddc85844238445a7d22bce5a4ef9a2239)
++++ b/main.py	(date 1745957897861)
+@@ -7,9 +7,11 @@
+ from modules.my_packages.analysis import PerformanceAnalyser
+ from modules.my_packages import utilities
+ import pandas as pd
+-import pickle
+ import numpy as np
+-import os
++import pickle
++import copy
++
++
+ 
+ # Data Downloading
+ # Assets
+@@ -56,6 +58,13 @@
+           'cs_idio_sr_lo' : RollingMetrics.rolling_idiosyncratic_sharpe_ratio
+           }
+ 
++start_dates = {'cs_mom_lo': [],
++               'cs_idio_mom_lo': [],
++               'cs_reversal_lo': [],
++               'cs_idio_reversal_lo': [],
++               'cs_sr_lo' : [],
++               'cs_idio_sr_lo' : []}
++
+ strats_args = {'cs_mom_lo': {'df': data_manager.returns,
+                              'nb_period': 12,
+                              'rolling_window': 12+1,
+@@ -176,12 +185,135 @@
+                                                                  show=False,
+                                                                  blocking=False)
+ 
++                # saving start dates to align all strategies and allow comparison
++                start_dates[key_strat].append((strategy_returns != 0.0).idxmax().values[0])
++
+     # Save the results
+     with open(r".\results\strategies_results\strategies_results.pickle", 'wb') as handle:
+         pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+ 
+-# rebalancement à mettre, avec premier date comme date de rebal
+-# compter les couts de transac
+-# sauvegarder start date pour aligner les rendements
+-# sauvegarder les rendements dans un fichier excel
+-# puis faire les graphiques et performance sur la période commune
++########################################################################################################################
++################# Storing results in a convenient format and all strategies aligned on the same dates ##################
++########################################################################################################################
++# Recomputes the metrics for aligned strategies
++start_date = max(x for sublist in start_dates.values() for x in sublist)
++print(f"first date where strategy returns is available for all strategies is {start_date}")
++# To store new results
++strategies_results_aligned = copy.deepcopy(strategies_results)
++all_series = []  # to store all the strategies returns in a unified dataframe
++all_series_by_strat = {strat: [] for strat in
++                       strats.keys()}  # to store all the strategies returns in a unified dataframe by strat
++all_series_metrics = []
++all_series_metrics_by_strat = {strat: [] for strat in strats.keys()}
++
++# Now, we'll crop the strategies from this date
++for key_strat in strats.keys():
++    for key_pct in percentiles.keys():
++        for industry in industry_segmentation:
++            for key_rebalancing_freq in rebalancing_freqs.keys():
++
++                strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = \
++                    strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'].loc[
++                    start_date:]
++
++                # Recompute the metrics
++                analyzer = PerformanceAnalyser(
++                    portfolio_returns=strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                        'strategy_returns'],
++                    freq='m',
++                    percentiles=key_pct,
++                    industries=industry,
++                    rebal_freq=key_rebalancing_freq
++                    )
++                metrics = analyzer.compute_metrics()
++                # Store the metrics
++                for metric in metrics.keys():
++                    strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[
++                        metric]
++
++                # All metrics
++                series_metrics = pd.Series(metrics, name=f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}")
++                all_series_metrics.append(series_metrics)
++
++                # All metrics by strat
++                all_series_metrics_by_strat[key_strat].append(series_metrics)
++
++                # Create dataframes of all the strategies within a given strategy
++                renamed_series_by_strat = \
++                strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                    'strategy_returns'].copy()
++                renamed_series_by_strat.rename(
++                    columns={f"{key_strat}": f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"}, inplace=True)
++                all_series_by_strat[key_strat].append(renamed_series_by_strat)
++
++                # Create a dataframe of all the strategies returns to plot cumulative perf
++                renamed_series = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                    'strategy_returns'].copy()
++                renamed_series.rename(
++                    columns={f"{key_strat}": f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"}, inplace=True)
++                all_series.append(renamed_series)
++
++# First output : a dict containing 6 dataframes with the strategies returns, one for each strategy, to plot the cumulative perf
++# Concatenate all the series into a dataframe
++all_strategies_returns_by_strat = {strat_key: pd.concat(all_series_by_strat[strat_key], axis=1) for strat_key in
++                                   all_series_by_strat.keys()}
++# Set the first line to 0.0 for each strat
++for strat_key, df in all_strategies_returns_by_strat.items():
++    df.iloc[0, :] = 0.0
++
++# Second output: a unified dataframe with all the strategies returns to plot the cumulative perf
++all_strategies_returns = pd.concat(all_series, axis=1)
++all_strategies_returns.iloc[0, :] = 0.0  # because all the strategies must start at 0.0
++
++# Third output: a dict containing 6 dataframes with the performance metrics, one for each strategy
++all_metrics_by_strat = {k: pd.concat(v, axis=1) for k, v in all_series_metrics_by_strat.items()}
++
++# Fourth output: a unified dataframe with the performance metrics
++all_metrics = pd.concat(all_series_metrics, axis=1)
++
++# Finally creating the last results
++bench = data_manager_factors.returns.loc[start_date:]
++bench = bench.copy()
++bench.iloc[0,:] = 0.0
++# Cumulative performance overall
++utilities.plot_dataframe(df=(1+all_strategies_returns).cumprod()-1,
++                         df_benchmark=(1+bench).cumprod()-1,
++               title="Cumulative performance of all strategies",
++               xlabel="Date",
++               ylabel="Cumulative returns",
++               legend=all_strategies_returns.columns,
++               saving_path=r".\results\final_results\cumulative_performance\cumulative_returns_all_strategies.png",
++               show=False,
++               blocking=False,
++                         fontsize=7,
++                         figsize=(20, 15),
++                         n_col=6,
++                         bbox_to_anchor=(0.5,-0.15)
++
++               )
++# Cumulative performance by strategy
++for key_strat, df in all_strategies_returns_by_strat.items():
++    utilities.plot_dataframe(df=(1+df).cumprod()-1,
++                             df_benchmark=(1+bench).cumprod()-1,
++                              title=f"Cumulative performance of {key_strat}",
++                              xlabel="Date",
++                              ylabel="Cumulative returns",
++                              legend=df.columns,
++                              saving_path=fr".\results\final_results\cumulative_performance\cumulative_returns_{key_strat}.png",
++                              show=False,
++                              blocking=False,
++                             fontsize=9,
++                             figsize=(20, 15),
++                             n_col=4,
++                             bbox_to_anchor=(0.5, -0.05)
++                              )
++
++# Saving the all metrics dataframe in an Excel file
++all_metrics.to_excel(r".\results\final_results\metrics\all_metrics.xlsx",
++               sheet_name="all_metrics",
++               index=True,
++               header=True)
++# Saving the all metrics dataframes by strategy in an Excel file
++with pd.ExcelWriter(r".\results\final_results\metrics\all_metrics_by_strat.xlsx") as writer:
++    for key_strat, df in all_metrics_by_strat.items():
++        df.to_excel(writer, sheet_name=key_strat, index=True, header=True)
+\ No newline at end of file
+Index: modules/my_packages/analysis.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import pandas as pd\r\nimport numpy as np\r\nimport matplotlib.pyplot as plt\r\nfrom typing import Union\r\n\r\nfrom matplotlib.pyplot import savefig\r\n\r\n\r\nclass PerformanceAnalyser:\r\n    \"\"\"Class to analyse the performance of a strategy\"\"\"\r\n    def __init__(self, portfolio_returns:pd.DataFrame,\r\n                 freq:str, zscores:Union[None, pd.DataFrame]=None,\r\n                 forward_returns:Union[None, pd.DataFrame]=None,\r\n                 percentiles:str=\"\",\r\n                 industries:str=\"\",\r\n                 rebal_freq:str=\"\"):\r\n        self.portfolio_returns = portfolio_returns\r\n        self.cumulative_performance = None\r\n        self.equity_curve = None\r\n        self.metrics = None\r\n        if freq not in ['d', 'w', 'm', 'y']:\r\n            raise ValueError(\"freq must be in ['d', 'w', 'm', 'y'].\")\r\n        self.freq = freq\r\n\r\n        if (zscores is not None) and isinstance(zscores, pd.DataFrame):\r\n            self.zscores = zscores\r\n        elif (zscores is not None) and not isinstance(zscores, pd.DataFrame):\r\n            raise ValueError(\"zscores must be a pandas dataframe.\")\r\n        else:\r\n            pass\r\n\r\n        if (forward_returns is not None) and isinstance(forward_returns, pd.DataFrame):\r\n            self.forward_returns = forward_returns\r\n        elif (forward_returns is not None) and not isinstance(forward_returns, pd.DataFrame):\r\n            raise ValueError(\"forward_returns must be a pandas dataframe.\")\r\n        else:\r\n            pass\r\n        self.percentiles = percentiles\r\n        self.industries = industries\r\n        self.rebal_freq = rebal_freq\r\n\r\n\r\n    def compute_cumulative_performance(self, compound_type:str=\"geometric\"):\r\n        \"\"\"Compute the cumulative performance of the strategy\"\"\"\r\n        if compound_type == \"geometric\":\r\n            self.cumulative_performance = (1 + self.portfolio_returns).cumprod() - 1\r\n        elif compound_type == \"arithmetic\":\r\n            self.cumulative_performance = self.portfolio_returns.cumsum()\r\n        else:\r\n            raise ValueError(\"Compound type not supported\")\r\n\r\n        return self.cumulative_performance\r\n\r\n    def compute_equity_curve(self):\r\n        \"\"\"Compute the equity curve of the strategy\"\"\"\r\n        self.equity_curve = self.compute_cumulative_performance(compound_type=\"arithmetic\")\r\n        return self.equity_curve\r\n\r\n    def compute_information_coefficient(self, ic_type:str='not_ranked',\r\n                                        percentiles:Union[None, tuple]=None):\r\n        \"\"\"\r\n        This functions returns a time-series of the information coefficient ('gross', i.e. not a percentage)\r\n        :param ic_type: 'not_ranked' returns the ic of the values themselves whereas 'ranked' uses the ranks of the values\r\n        :param percentiles: if set to None, uses all the data, if set to a tuple of int, e.g. (10,90) skip the \"middle\"\r\n        part and only computes the ic of the extremities.\r\n        :return: a time-series of the ic\r\n        \"\"\"\r\n        if self.zscores is None or not isinstance(self.zscores, pd.DataFrame):\r\n            raise ValueError(\"To compute the information coefficient, you must create PerformanceAnalyser object with zscores as a pandas dataframe. \")\r\n        if self.forward_returns is None or not isinstance(self.forward_returns, pd.DataFrame):\r\n            raise ValueError(\"To compute the information coefficient, you must create PerformanceAnalyser object with forward_returns as a pandas dataframe. \")\r\n        if ic_type not in ['not_ranked', 'ranked']:\r\n            raise ValueError(\"ic_type must be either 'not_ranked' or 'ranked' (string).\")\r\n        if percentiles is None:\r\n            pass\r\n        elif percentiles is not None:\r\n            if not (isinstance(percentiles, tuple) and len(percentiles) == 2 and all(\r\n                    isinstance(x, (int, float)) for x in percentiles)):\r\n                raise ValueError(\"percentiles must be a tuple of exactly two elements, containing only int and float.\")\r\n\r\n        ic = pd.DataFrame(data=np.nan, index=self.zscores.index, columns=['information_coefficient'])\r\n        first_date = self.zscores.first_valid_index()\r\n        zs_truncated = self.zscores.loc[first_date:,:]\r\n        for date in zs_truncated.index:\r\n            if zs_truncated.loc[date, :].to_frame().T.isna().all().all():\r\n                continue\r\n            if ic_type == 'not_ranked':\r\n                if percentiles is not None:\r\n                    rank_temp = zs_truncated.loc[date, :].to_frame().T # we do not take the rank (this is just a variable name)\r\n                    fwd_ret_temp = self.forward_returns.loc[date, :]\r\n\r\n                    # Only evaluates the IC for the percentiles\r\n                    upper_bound = np.nanpercentile(rank_temp,\r\n                                                   q=percentiles[1]) if not rank_temp.dropna().empty else np.nan\r\n                    # Format to ease comparison after\r\n                    upper_bound = pd.DataFrame(data=np.tile(upper_bound, (1, rank_temp.shape[1])),\r\n                                               index=rank_temp.index,\r\n                                               columns=rank_temp.columns)\r\n\r\n                    lower_bound = np.nanpercentile(rank_temp,\r\n                                                   q=percentiles[0]) if not rank_temp.dropna().empty else np.nan\r\n                    # Format to ease comparison after\r\n                    lower_bound = pd.DataFrame(data=np.tile(lower_bound, (1, rank_temp.shape[1])),\r\n                                               index=rank_temp.index,\r\n                                               columns=rank_temp.columns)\r\n\r\n                    # Percentiles selection for the ic computation\r\n                    mask = (rank_temp >= upper_bound) | (rank_temp <= lower_bound)\r\n                    cols_to_keep = mask.columns[mask.iloc[0, :]]\r\n                    pct_rank = rank_temp[cols_to_keep].values.T\r\n                    pct_fwd_ret = fwd_ret_temp[cols_to_keep].values[:, None]\r\n\r\n                    # Store\r\n                    corr_temp = np.corrcoef(pct_rank.ravel(), pct_fwd_ret.ravel())[0][1]\r\n                    ic.loc[date, :] = corr_temp\r\n                else:\r\n                    corr_temp = np.corrcoef( zs_truncated.loc[date,:] , self.forward_returns.loc[date,:] )[0][1]\r\n                    ic.loc[date,:] = corr_temp\r\n\r\n            elif ic_type == 'ranked':\r\n                if percentiles is not None:\r\n                    rank_temp = zs_truncated.loc[date, :].rank(ascending=True).to_frame().T\r\n                    fwd_ret_temp = self.forward_returns.loc[date, :]\r\n\r\n                    # Only evaluates the IC for the percentiles\r\n                    upper_bound = np.nanpercentile(rank_temp,\r\n                                                   q=percentiles[1]) if not rank_temp.dropna().empty else np.nan\r\n                    # Format to ease comparison after\r\n                    upper_bound = pd.DataFrame(data=np.tile(upper_bound, (1, rank_temp.shape[1])),\r\n                                               index=rank_temp.index,\r\n                                               columns=rank_temp.columns)\r\n\r\n                    lower_bound = np.nanpercentile(rank_temp,\r\n                                                   q=percentiles[0]) if not rank_temp.dropna().empty else np.nan\r\n                    # Format to ease comparison after\r\n                    lower_bound = pd.DataFrame(data=np.tile(lower_bound, (1, rank_temp.shape[1])),\r\n                                               index=rank_temp.index,\r\n                                               columns=rank_temp.columns)\r\n\r\n                    # Percentiles selection for the ic computation\r\n                    mask = (rank_temp >= upper_bound) | (rank_temp <= lower_bound)\r\n                    cols_to_keep = mask.columns[mask.iloc[0,:]]\r\n                    pct_rank = rank_temp[cols_to_keep].values.T\r\n                    pct_fwd_ret = fwd_ret_temp[cols_to_keep].values[:,None]\r\n\r\n                    # Store\r\n                    corr_temp = np.corrcoef(pct_rank.ravel(), pct_fwd_ret.ravel())[0][1]\r\n                    ic.loc[date, :] = corr_temp\r\n                else:\r\n                    rank = zs_truncated.loc[date,:].rank(ascending=True)\r\n                    corr_temp = np.corrcoef( rank, self.forward_returns.loc[date,:] )[0][1]\r\n                    ic.loc[date,:] = corr_temp\r\n            else:\r\n                raise ValueError(\"ic_type must be either 'not_ranked' or 'ranked' (string).\")\r\n\r\n        return ic\r\n\r\n    def compute_max_drawdown(self) -> pd.Series:\r\n        \"\"\"\r\n        Computes the maximum drawdown for each column in a returns DataFrame.\r\n\r\n        Parameters:\r\n        - returns (pd.DataFrame): A DataFrame of returns (each column = an asset or a portfolio).\r\n\r\n        Returns:\r\n        - pd.Series: Maximum drawdown for each column (negative values).\r\n        \"\"\"\r\n        # Compute cumulative returns\r\n        cumulative_returns = (1 + self.portfolio_returns).cumprod()\r\n\r\n        # Compute running maximum\r\n        running_max = cumulative_returns.cummax()\r\n\r\n        # Compute drawdowns\r\n        drawdowns = (cumulative_returns / running_max) - 1\r\n\r\n        # Compute maximum drawdown for each column\r\n        max_drawdown = drawdowns.min()\r\n\r\n        return max_drawdown\r\n\r\n\r\n    def compute_metrics(self):\r\n        \"\"\"Compute the performance metrics of the strategy\"\"\"\r\n        freq_mapping = {'d': 252, 'w': 52, 'm': 12, 'y': 1}\r\n\r\n        if self.freq in freq_mapping:\r\n            freq_num = freq_mapping[self.freq]\r\n        else:\r\n            raise ValueError(f\"Invalid frequency '{self.freq}'. Expected one of {list(freq_mapping.keys())}.\")\r\n\r\n        if self.cumulative_performance is None:\r\n            self.compute_cumulative_performance()\r\n\r\n        # Compute basic performance metrics\r\n        total_return = self.cumulative_performance.iloc[-1, 0]\r\n        annualized_return = (1 + total_return) ** (freq_num / len(self.portfolio_returns)) - 1\r\n        volatility = self.portfolio_returns.std() * np.sqrt(freq_num)\r\n        sharpe_ratio = annualized_return / volatility\r\n\r\n        # Maximum drawdown\r\n        max_drawdown = self.compute_max_drawdown()\r\n\r\n        return {\r\n            'total_return': total_return,\r\n            'annualized_return': annualized_return,\r\n            'annualized_volatility': volatility.values[0],\r\n            'annualized_sharpe_ratio': sharpe_ratio.values[0],\r\n            'max_drawdown': max_drawdown.values[0]\r\n        }\r\n\r\n    def plot_cumulative_performance(self,\r\n                                    saving_path:str=None,\r\n                                    show:bool=False,\r\n                                    blocking:bool=True):\r\n        \"\"\"Plot the cumulative performance of the strategy\"\"\"\r\n        if self.cumulative_performance is None:\r\n            self.compute_cumulative_performance()\r\n        if self.metrics is None:\r\n            self.metrics = self.compute_metrics()\r\n\r\n        plt.figure(figsize=(12, 6))\r\n        plt.plot(self.cumulative_performance.index, self.cumulative_performance, label=f\"{self.portfolio_returns.columns[0]}_returns\")\r\n        plt.title(f\"Cumulative Performance of strategy:{self.portfolio_returns.columns[0]} - {self.percentiles} - {self.industries} - {self.rebal_freq} \\n\"\r\n                  f\"Performance Metrics: ann. ret={self.metrics['annualized_return']:.2%}; ann. vol={self.metrics['annualized_volatility']:.2%}; ann. SR={self.metrics['annualized_sharpe_ratio']:.2f}; max. dd={self.metrics['max_drawdown']:.2%}\",\r\n                  fontsize=10)\r\n        plt.xlabel(\"Date\")\r\n        plt.ylabel(\"Cumulative Performance\")\r\n        plt.legend()\r\n        plt.grid()\r\n\r\n        if saving_path is not None:\r\n            plt.savefig(saving_path, bbox_inches='tight')\r\n        if show is not None:\r\n            plt.show(block=blocking)\r\n\r\n        plt.close()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/my_packages/analysis.py b/modules/my_packages/analysis.py
+--- a/modules/my_packages/analysis.py	(revision fce8ee6ddc85844238445a7d22bce5a4ef9a2239)
++++ b/modules/my_packages/analysis.py	(date 1745954130462)
+@@ -231,7 +231,7 @@
+ 
+         if saving_path is not None:
+             plt.savefig(saving_path, bbox_inches='tight')
+-        if show is not None:
++        if show:
+             plt.show(block=blocking)
+-
+-        plt.close()
++        else:
++            plt.close()
+Index: modules/my_packages/utilities.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\r\nimport sys\r\nimport pandas as pd\r\nimport numpy as np\r\nfrom typing import Union, Tuple\r\nfrom sklearn.linear_model import LinearRegression\r\nimport warnings\r\n\r\ndef compute_percentiles(df: pd.DataFrame, percentiles: Tuple[int, int]):\r\n    if not isinstance(df, pd.DataFrame):\r\n        raise ValueError(\"df must be a pandas df.\")\r\n    if not (isinstance(percentiles, tuple) and len(percentiles) == 2 and all(isinstance(x, int) for x in percentiles)):\r\n        raise ValueError(\"percentiles must be a tuple of exactly two elements, containing only int.\")\r\n\r\n    # Calcul des bornes supérieures et inférieures\r\n    upper_bound = df.apply(\r\n        lambda row: np.nanpercentile(row, q=percentiles[1]) if not row.dropna().empty else np.nan, axis=1)\r\n    lower_bound = df.apply(\r\n        lambda row: np.nanpercentile(row, q=percentiles[0]) if not row.dropna().empty else np.nan, axis=1)\r\n\r\n    # Formatage pour comparaison\r\n    upper_bound = pd.DataFrame(data=np.tile(upper_bound.values[:, None], (1, df.shape[1])), index=df.index,\r\n                               columns=df.columns)\r\n    lower_bound = pd.DataFrame(data=np.tile(lower_bound.values[:, None], (1, df.shape[1])), index=df.index,\r\n                               columns=df.columns)\r\n\r\n    # Calcul des signaux\r\n    signals = pd.DataFrame(data=np.nan, index=df.index, columns=df.columns)\r\n    signals[df >= upper_bound] = 1.0\r\n    signals[df <= lower_bound] = -1.0\r\n\r\n    # Calcul de tous les percentiles \r\n    all_percentiles = {f\"p{q}\": df.apply(\r\n        lambda row: np.nanpercentile(row, q=q) if not row.dropna().empty else np.nan, axis=1)\r\n        for q in range(0, 101, 10)} # Calcul des percentiles de 0 à 100 par pas de 10\r\n\r\n    # Formatage des percentiles\r\n    for key, series in all_percentiles.items():\r\n        all_percentiles[key] = pd.DataFrame(data=np.tile(series.values[:, None], (1, df.shape[1])), index=df.index,\r\n                                            columns=df.columns)\r\n\r\n    # Retourne les bornes, les signaux et tous les percentiles\r\n    return {\r\n        'upper_bound': upper_bound,\r\n        'lower_bound': lower_bound,\r\n        'signals': signals,\r\n        'all_percentiles': all_percentiles  # Tous les percentiles calculés\r\n    }\r\n\r\n\r\ndef clean_dataframe(df:pd.DataFrame) -> pd.DataFrame:\r\n    \"\"\"\r\n    Cleans the DataFrame by replacing -inf or inf values by nan.\r\n\r\n    Args:\r\n        df (pd.DataFrame): The DataFrame to clean.\r\n\r\n    Returns:\r\n        pd.DataFrame: A cleaned DataFrame with NaN rows and columns removed.\r\n    \"\"\"\r\n    if not isinstance(df, pd.DataFrame):\r\n        raise ValueError(\"df must be a pandas df.\")\r\n\r\n    # Replace -inf and inf with NaN\r\n    df = df.replace([np.inf, -np.inf], np.nan)\r\n    return df\r\n\r\ndef compute_zscores(df:pd.DataFrame, axis:int=1) -> pd.DataFrame:\r\n    \"\"\"\r\n    Computes the z-scores of a DataFrame along the specified axis.\r\n\r\n    Args:\r\n        df (pd.DataFrame): The DataFrame to compute z-scores for.\r\n        axis (int): The axis along which to compute z-scores. 0 for rows, 1 for columns.\r\n\r\n    Returns:\r\n        pd.DataFrame: A DataFrame containing the z-scores.\r\n    \"\"\"\r\n    if not isinstance(df, pd.DataFrame):\r\n        raise ValueError(\"df must be a pandas df.\")\r\n    if axis not in [0, 1]:\r\n        raise ValueError(\"axis must be either 0 (rows) or 1 (columns).\")\r\n\r\n    mean = df.mean(axis=axis, skipna=True)\r\n    std = df.std(axis=axis, skipna=True)\r\n\r\n    zscores = (df.values - mean.values[:,None]) / std.values[:,None]\r\n    zscores = pd.DataFrame(data=zscores, index=df.index, columns=df.columns)\r\n    return zscores\r\n\r\ndef winsorize_dataframe(df:pd.DataFrame, percentiles:Tuple[int, int]=(1,99), axis:int=1) -> pd.DataFrame:\r\n    \"\"\"\r\n    Winsorizes the DataFrame by replacing extreme values with the specified percentiles row-wise or column-wise.\r\n\r\n    Args:\r\n        df (pd.DataFrame): The DataFrame to winsorize.\r\n        percentiles (Tuple[int, int]): The lower and upper percentiles to use for winsorization.\r\n        axis (int): The axis along which to apply winsorization.\r\n                    0 for column-wise (apply on each column),\r\n                    1 for row-wise (apply on each row).\r\n    Returns:\r\n        pd.DataFrame: A winsorized DataFrame.\r\n    \"\"\"\r\n    if not isinstance(df, pd.DataFrame):\r\n        raise ValueError(\"df must be a pandas DataFrame.\")\r\n    if not (\r\n            isinstance(percentiles, tuple)\r\n            and len(percentiles) == 2\r\n            and all(isinstance(x, int) for x in percentiles)\r\n    ):\r\n        raise ValueError(\"percentiles must be a tuple of two integers.\")\r\n    if axis not in [0, 1]:\r\n        raise ValueError(\"axis must be either 0 (rows) or 1 (columns).\")\r\n\r\n    def winsorize_row_or_col(row_or_col):\r\n        if row_or_col.isna().all():\r\n            return row_or_col  # we keep the row or colum empty\r\n        lower = np.nanpercentile(row_or_col, percentiles[0])\r\n        upper = np.nanpercentile(row_or_col, percentiles[1])\r\n        return row_or_col.clip(lower=lower, upper=upper)\r\n\r\n    return df.apply(winsorize_row_or_col, axis=axis)\r\n\r\ndef compute_sharpe_ratio(df_returns:pd.DataFrame,\r\n                         risk_free_rate:Union[float, pd.DataFrame]=0.0,\r\n                         frequency:str='daily') -> Union[pd.DataFrame,float]:\r\n    \"\"\" Computes the Sharpe ratio of a DataFrame of returns.\"\"\"\r\n    # Input checks\r\n    if not isinstance(df_returns, pd.DataFrame):\r\n        raise ValueError(\"df_returns must be a pandas DataFrame.\")\r\n    if not isinstance(risk_free_rate, (float, pd.DataFrame)):\r\n        raise ValueError(\"risk_free_rate must be a float or a pandas DataFrame.\")\r\n    if not isinstance(frequency, str) and frequency not in ['daily', 'weekly', 'monthly', 'yearly']:\r\n        raise ValueError(\"frequency must be either 'daily', 'weekly', 'monthly' or 'yearly.\")\r\n\r\n    # Frequency conversion\r\n    if frequency == 'daily':\r\n        freq = 252\r\n    elif frequency == 'weekly':\r\n        freq = 52\r\n    elif frequency == 'monthly':\r\n        freq = 12\r\n    elif frequency == 'yearly':\r\n        freq = 1\r\n\r\n    # Compute excess returns\r\n    if isinstance(risk_free_rate, pd.DataFrame):\r\n        excess_returns = df_returns.values - risk_free_rate.values\r\n        excess_returns = pd.DataFrame(data=excess_returns, index=df_returns.index, columns=df_returns.columns)\r\n    else:\r\n        excess_returns = df_returns - risk_free_rate\r\n\r\n    # Compute mean and standard deviation nd avoiding warnings in the presence of nan\r\n    with warnings.catch_warnings():\r\n        warnings.simplefilter(\"ignore\", category=RuntimeWarning)\r\n        mean_excess_returns = excess_returns.mean(axis=0, skipna=True)\r\n        std_excess_returns = excess_returns.std(axis=0, skipna=True)\r\n\r\n    # Compute Sharpe ratio\r\n    sharpe_ratio = mean_excess_returns / std_excess_returns\r\n    # Annualize the Sharpe ratio\r\n    sharpe_ratio = sharpe_ratio * np.sqrt(freq)\r\n\r\n    return pd.DataFrame(sharpe_ratio).T\r\n\r\ndef rolling_sharpe_ratio(df_returns:pd.DataFrame,\r\n                         rolling_window:int,\r\n                         risk_free_rate:Union[float, pd.DataFrame]=0.0,\r\n                         frequency:str='daily') -> Union[pd.DataFrame,float]:\r\n\r\n    if not isinstance(rolling_window, int):\r\n        raise ValueError(\"rolling_window must be an int.\")\r\n    if rolling_window <= 0:\r\n        raise ValueError(\"rolling_window must be greater than 0.\")\r\n    if df_returns.shape[0] < rolling_window:\r\n        raise ValueError(\"rolling_window must be less than the number of rows in df_returns.\")\r\n\r\n    df_sharpe_ratios = pd.DataFrame(data=np.nan, index=df_returns.index, columns=df_returns.columns)\r\n    for i_end in range(rolling_window, df_returns.shape[0]):\r\n        df_returns_local = df_returns.iloc[i_end-rolling_window:i_end,:]\r\n        sharpe_ratio = compute_sharpe_ratio(df_returns=df_returns_local,\r\n                                            risk_free_rate=risk_free_rate,\r\n                                            frequency=frequency)\r\n        df_sharpe_ratios.iloc[i_end,:] = sharpe_ratio.values\r\n\r\n    return df_sharpe_ratios\r\n\r\ndef compute_idiosyncratic_returns(df_assets:pd.DataFrame, df_factors:pd.DataFrame, window_regression:int):\r\n    \"\"\"\r\n    Computes the idiosyncratic returns of the assets using a rolling regression.\r\n\r\n    Args:\r\n        df_assets (pd.DataFrame): DataFrame of asset returns.\r\n        df_factors (pd.DataFrame): DataFrame of factor returns.\r\n        window_regression (int): Window size for the rolling regression.\r\n    \"\"\"\r\n    # Check inputs\r\n    if not isinstance(df_assets, pd.DataFrame):\r\n        raise TypeError(\"The `df_assets` parameter must be a pandas DataFrame.\")\r\n    if not isinstance(df_factors, pd.DataFrame):\r\n        raise TypeError(\"The `df_factors` parameter must be a pandas DataFrame.\")\r\n    if not df_assets.shape[0] == df_factors.shape[0]:\r\n        raise ValueError(\"The number of rows in df_assets and df_factors must be equal.\")\r\n    if not df_assets.index.equals(df_factors.index):\r\n        raise ValueError(\"The indices of df_assets and df_factors must be equal.\")\r\n    if window_regression > df_assets.shape[0]:\r\n        raise ValueError(\"window_regression cannot be greater than the nb of rows in df.\")\r\n\r\n    # Perform rolling regression\r\n    residuals = pd.DataFrame(data=np.nan, index=df_assets.index, columns=df_assets.columns)\r\n    for col_idx,col in enumerate(df_assets.columns):\r\n        print(f\"Working on column {col} ({col_idx+1}/{df_assets.shape[1]})\")\r\n        for i in range(window_regression, df_assets.shape[0]):\r\n            print(f\"Working on row {i} ({i+1}/{df_assets.shape[0]})\")\r\n            # Get the current window of data\r\n            y = df_assets.iloc[i-window_regression:i,col_idx]\r\n            x = df_factors.iloc[i-window_regression:i]\r\n\r\n            # Check presence of NaN values\r\n            merged_yx = pd.merge(y, x, left_index=True, right_index=True, how='inner')\r\n            merged_yx = merged_yx.dropna()\r\n            # Check if we have enough data points for regression\r\n            # If not, skip this iteration\r\n            if merged_yx.shape[0] < 2:\r\n                continue\r\n            y_cleaned = merged_yx.iloc[:,0].values.reshape(-1,1)\r\n            x_cleaned = merged_yx.iloc[:,1:].values\r\n\r\n            # Perform regression\r\n            model = LinearRegression()\r\n            model.fit(x_cleaned, y_cleaned)\r\n            # Get residuals\r\n            res = y_cleaned - model.predict(x_cleaned)\r\n            # Store residuals\r\n            residuals.iloc[i, col_idx] = res[-1][0]\r\n\r\n    return residuals\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/my_packages/utilities.py b/modules/my_packages/utilities.py
+--- a/modules/my_packages/utilities.py	(revision fce8ee6ddc85844238445a7d22bce5a4ef9a2239)
++++ b/modules/my_packages/utilities.py	(date 1745957374164)
+@@ -2,6 +2,7 @@
+ import sys
+ import pandas as pd
+ import numpy as np
++import matplotlib.pyplot as plt
+ from typing import Union, Tuple
+ from sklearn.linear_model import LinearRegression
+ import warnings
+@@ -236,3 +237,62 @@
+ 
+     return residuals
+ 
++def plot_dataframe(df:pd.DataFrame,
++                   df_benchmark:pd.DataFrame=None,
++                   title:str=None,
++                   xlabel:str=None,
++                   ylabel:str=None,
++                   legend:bool=True,
++                   show:bool=False,
++                   blocking:bool=False,
++                   saving_path:str=None,
++                   fontsize:int=7,
++                   bbox_to_anchor:Tuple[float, float]=(0.5, -0.15),
++                   figsize:Tuple[int, int]=(20, 15),
++                   n_col:int=6):
++    """
++    Plots a DataFrame.
++
++    Args:
++        :param df_benchmark:
++        :param fontsize:
++        :param df:
++        :param title:
++        :param xlabel:
++        :param ylabel:
++        :param legend:
++        :param show:
++        :param blocking:
++        :param saving_path:
++    """
++    if not isinstance(df, pd.DataFrame):
++        raise ValueError("df must be a pandas DataFrame.")
++
++    plt.figure(figsize=figsize)
++    plt.plot(df)
++    if df_benchmark is not None:
++        plt.plot(df_benchmark, color='black', linestyle='--', label='Benchmark', linewidth=3)
++    if title is not None:
++        plt.title(title)
++    if xlabel is not None:
++        plt.xlabel(xlabel)
++    if ylabel is not None:
++        plt.ylabel(ylabel)
++    if legend is not None:
++        plt.legend(
++            df.columns,
++            loc='upper center',
++            bbox_to_anchor=bbox_to_anchor,
++            ncol=n_col,
++            fontsize=fontsize,
++            frameon=False
++        )
++    plt.grid()
++    plt.tight_layout()
++    if saving_path is not None:
++        plt.savefig(saving_path)
++    if show:
++        plt.show(block=blocking)
++    plt.close()
++
++    return None
+Index: modules/scripts/example_multiple_strats.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Main script\r\nfrom modules.my_packages.data import ExcelDataSource, DataManager\r\nfrom modules.my_packages.strategies import CrossSectionalPercentiles\r\nfrom modules.my_packages.signal_utilities import Momentum, RollingMetrics\r\nfrom modules.my_packages.portfolio import EqualWeightingScheme, NaiveRiskParity\r\nfrom modules.my_packages.backtest import Backtest\r\nfrom modules.my_packages.analysis import PerformanceAnalyser\r\nfrom modules.my_packages import utilities\r\nimport pandas as pd\r\nimport numpy as np\r\nimport os\r\nimport pickle\r\nimport copy\r\n\r\n# Data Downloading\r\n# Assets\r\nfile_path = os.path.join(r\"C:\\Users\\mateo\\Code\\AM\\Project_Asset_Management\", \"data\", \"data_short.xlsx\")\r\n# data_source = ExcelDataSource(file_path=r\".\\data\\data_short.xlsx\", sheet_name=\"data\")\r\ndata_source = ExcelDataSource(file_path=file_path, sheet_name=\"data\")\r\ndata_manager = DataManager(data_source=data_source,\r\n                           max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill\r\n                           rebase_prices=True,\r\n                           n_implementation_lags=1 # always set to 1 because returns at time t, which are from t-1 to t, must be multiplied by returns\r\n                           # at time t+1, which is from t to t+1 to get the strategy returns (backtest) and avoid look-ahead bias\r\n                           )\r\ndata_manager.load_data()\r\ndata_manager.clean_data()\r\ndata_manager.compute_returns()\r\ndata_manager.account_implementation_lags()\r\n\r\n# Factors (market)\r\nfile_path = os.path.join(r\"C:\\Users\\mateo\\Code\\AM\\Project_Asset_Management\", \"data\", \"msci.xlsx\")\r\n# data_source_factors = ExcelDataSource(file_path=r\".\\data\\msci.xlsx\", sheet_name=\"data\")\r\ndata_source_factors = ExcelDataSource(file_path=file_path, sheet_name=\"data\")\r\ndata_manager_factors = DataManager(data_source=data_source_factors,\r\n                           max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill\r\n                           rebase_prices=True,\r\n                           n_implementation_lags=1 # always set to 1 because returns at time t, which are from t-1 to t, must be multiplied by returns\r\n                           # at time t+1, which is from t to t+1 to get the strategy returns (backtest) and avoid look-ahead bias\r\n                           )\r\ndata_manager_factors.load_data()\r\ndata_manager_factors.clean_data()\r\ndata_manager_factors.compute_returns()\r\n\r\n# Industry data\r\nnp.random.seed(42)\r\nindustries = ['IT', 'Financials', 'Healthcare', 'Industrials', 'ConsumerDiscretionary',\r\n              'ConsumerStaples', 'CommunicationServices', 'Energy', 'Materials', 'Utilities', 'RealEstate']\r\n\r\nreturns = data_manager.returns\r\nindustries_per_action = np.random.choice(industries, size=returns.shape[1])\r\nindustry_assignments = pd.DataFrame(\r\n    np.tile(industries_per_action, (returns.shape[0], 1)),\r\n    index=returns.index,\r\n    columns=returns.columns\r\n)\r\n\r\n# Strategies setting\r\nstrats = {'cs_mom_lo': Momentum.rolling_momentum,\r\n          'cs_idio_mom_lo': Momentum.rolling_idiosyncratic_momentum,\r\n          'cs_reversal_lo': Momentum.rolling_momentum,\r\n          'cs_idio_reversal_lo': Momentum.rolling_idiosyncratic_momentum,\r\n          'cs_sr_lo' : utilities.rolling_sharpe_ratio,\r\n          'cs_idio_sr_lo' : RollingMetrics.rolling_idiosyncratic_sharpe_ratio\r\n          }\r\n\r\nstart_dates = {'cs_mom_lo': [],\r\n               'cs_idio_mom_lo': [],\r\n               'cs_reversal_lo': [],\r\n               'cs_idio_reversal_lo': [],\r\n               'cs_sr_lo' : [],\r\n               'cs_idio_sr_lo' : []}\r\n\r\nstrats_args = {'cs_mom_lo': {'df': data_manager.returns,\r\n                             'nb_period': 12,\r\n                             'rolling_window': 12+1,\r\n                             'nb_period_to_exclude': 1,\r\n                             'exclude_last_period': True},\r\n               'cs_idio_mom_lo': {'df_assets': data_manager.returns,\r\n                                  'df_factors': data_manager_factors.returns,\r\n                                  'nb_period': 12,\r\n                                  'rolling_window': 12+1,\r\n                                  'nb_period_to_exclude': 1,\r\n                                  'exclude_last_period': True},\r\n               'cs_reversal_lo': {'df': data_manager.returns,\r\n                             'nb_period': 1,\r\n                             'rolling_window': 1+1,\r\n                             'nb_period_to_exclude': None,\r\n                             'exclude_last_period': False},\r\n               'cs_idio_reversal_lo': {'df_assets': data_manager.returns,\r\n                                  'df_factors': data_manager_factors.returns,\r\n                                  'nb_period': 1,\r\n                                  'rolling_window': 1+1,\r\n                                  'nb_period_to_exclude': None,\r\n                                  'exclude_last_period': False},\r\n               'cs_sr_lo' : {'df_returns': data_manager.returns,\r\n                             'rolling_window': 12,\r\n                             'risk_free_rate': 0.0,\r\n                             'frequency': 'monthly'},\r\n               'cs_idio_sr_lo' : {'df_assets': data_manager.returns,\r\n                                  'df_factors': data_manager_factors.returns,\r\n                                  'rolling_window_sharpe_ratio': 12,\r\n                                  'rolling_window_idiosyncratic': 12,\r\n                                  'risk_free_rate': 0.0,\r\n                                  'frequency': 'monthly'}\r\n               }\r\n\r\npercentiles = {'deciles': (10,90),\r\n               'quintiles': (20,80),\r\n               'quartiles': (25,75)}\r\n\r\nindustry_segmentation = ['AllIndustries', 'BestInIndustries']\r\n\r\nrebalancing_freqs = {'monthly': 1,\r\n                     'quarterly': 3,\r\n                     'semi_annually': 6,\r\n                     'yearly': 12,\r\n                     }\r\n\r\nmetrics = ['total_return', 'annualized_return', 'annualized_volatility', 'annualized_sharpe_ratio', 'max_drawdown']\r\nstrategies_results = {}\r\n\r\nfor strat in strats.keys():\r\n    strategies_results[strat] = {}\r\n    for percentile in percentiles.keys():\r\n        strategies_results[strat][percentile] = {}\r\n        for industry in industry_segmentation:\r\n            strategies_results[strat][percentile][industry] = {}\r\n            for rebalancing_freq in rebalancing_freqs.keys():\r\n                strategies_results[strat][percentile][industry][rebalancing_freq] = {}\r\n                strategies_results[strat][percentile][industry][rebalancing_freq]['strategy_returns'] = None\r\n                for metric in metrics:\r\n                    strategies_results[strat][percentile][industry][rebalancing_freq][metric] = None\r\n\r\n# Cross-sectional strategies\r\nfor key_strat, value_signal_function in strats.items():\r\n    print(\r\n        f\"-----------------------------------------------------------------------------------------------------------\")\r\n    print(\r\n        f\"---------------------------working on strategy:{key_strat}-------------------------------------------------\")\r\n    # Step 1 - Strategy Creation\r\n    strategy = CrossSectionalPercentiles(prices=data_manager.cleaned_data,\r\n                                         returns=data_manager.returns,\r\n                                         signal_function=value_signal_function,\r\n                                         signal_function_inputs=strats_args[key_strat],\r\n                                         )\r\n\r\n    strategy.compute_signals_values()\r\n\r\n    for key_pct, value_pct in percentiles.items():\r\n        print(f\"-------------------------working on percentile:{key_pct}-----------------------------------------------\")\r\n        for industry in industry_segmentation:\r\n            print(f\"*-----------working on industry:{industry}--------------*\")\r\n            for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():\r\n                print(f\"**------working on rebalancing frequency:{key_rebalancing_freq}**------\")\r\n\r\n                strategy.compute_signals(percentiles_portfolios=value_pct,\r\n                                         percentiles_winsorization=(1,99),\r\n                                         industry_segmentation=industry_assignments if industry == 'BestInIndustries' else None)\r\n\r\n                # Step 2 - Portfolio Construction\r\n                portfolio = EqualWeightingScheme(returns=data_manager.returns,\r\n                                                 signals=strategy.signals,\r\n                                                 rebal_periods=value_rebalancing_freq,\r\n                                                 portfolio_type='long_only'\r\n                                                 )\r\n                portfolio.compute_weights()\r\n                #portfolio.rebalance_portfolio()\r\n\r\n                # Step 3 - Backtesting\r\n                backtest =  Backtest(returns=data_manager.aligned_returns,\r\n                                     weights=portfolio.weights,\r\n                                     strategy_name=key_strat)\r\n                strategy_returns = backtest.run_backtest()\r\n\r\n                # Step 4 - Performance Analysis\r\n                analyzer = PerformanceAnalyser(portfolio_returns=strategy_returns,\r\n                                               freq='m',\r\n                                               percentiles=key_pct,\r\n                                               industries=industry,\r\n                                               rebal_freq=key_rebalancing_freq\r\n                                               )\r\n                metrics = analyzer.compute_metrics()\r\n\r\n                # Step 5 - Storing results\r\n                print(f\"storing results for strategy:{key_strat}, percentile:{key_pct}, industry:{industry}, rebalancing frequency:{key_rebalancing_freq}\")\r\n                strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = strategy_returns\r\n                # We can also store the metrics\r\n                for metric in metrics.keys():\r\n                    strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]\r\n\r\n                # saving cumulative perf\r\n                analyzer.plot_cumulative_performance(\r\n                    saving_path=fr\".\\results\\plots\\{key_strat}\\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png\",\r\n                    show=False,\r\n                    blocking=False)\r\n\r\n                # saving start dates to align all strategies and allow comparison\r\n                start_dates[key_strat].append((strategy_returns != 0.0).idxmax())\r\n\r\n    # Save the results\r\n    with open(r\".\\results\\strategies_results\\strategies_results.pickle\", 'wb') as handle:\r\n        pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)\r\n\r\n\r\n# Recomputes the metrics for aligned strategies\r\nstart_date = max(x for sublist in start_dates.values() for x in sublist).values[0]\r\nprint(f\"first date where strategy returns is available for all strategies is {start_date}\")\r\n# To store new results\r\nstrategies_results_aligned = copy.deepcopy(strategies_results)\r\nall_series = []\r\nall_series_by_strat = {strat: [] for strat in strats.keys()}\r\n# Now, we'll crop the strategies from this date\r\nfor key_strat, value_signal_function in strats.items():\r\n    for key_pct, value_pct in percentiles.items():\r\n        for industry in industry_segmentation:\r\n            for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():\r\n                strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = \\\r\n                    strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'].loc[\r\n                        start_date:]\r\n\r\n                # Recompute the metrics\r\n                analyzer = PerformanceAnalyser(portfolio_returns=strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'],\r\n                                               freq='m',\r\n                                               percentiles=key_pct,\r\n                                               industries=industry,\r\n                                               rebal_freq=key_rebalancing_freq\r\n                                               )\r\n                metrics = analyzer.compute_metrics()\r\n                # Store the metrics\r\n                for metric in metrics.keys():\r\n                    strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]\r\n\r\n                # Create dataframes of all the strategies within a given strategy\r\n                renamed_series_by_strat = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][\r\n                    'strategy_returns'].copy()\r\n                renamed_series_by_strat.name = f\"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}\"\r\n                all_series_by_strat[key_strat].append(renamed_series_by_strat)\r\n\r\n                # Create a dataframe of all the strategies returns to plot cumulative perf\r\n                renamed_series = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][\r\n                    'strategy_returns'].copy()\r\n                renamed_series.name = f\"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}\"\r\n                all_series.append(renamed_series)\r\n\r\n# Concatenate all the series into a dataframe\r\nall_strategies_returns_by_strat = {strat_key: pd.concat(all_series_by_strat[strat_key], axis=1) for strat_key in all_series_by_strat.keys()}\r\n# Set the first line to 0.0 for each strat\r\nfor strat_key, df in all_strategies_returns_by_strat.items():\r\n    df.iloc[0, :] = 0.0\r\n\r\nall_strategies_returns = pd.concat(all_series, axis=1)\r\nall_strategies_returns.iloc[0,:] = 0.0 # because all the strategies must start at 0.0\r\nimport matplotlib.pyplot as plt\r\nplt.plot((1+all_strategies_returns).cumprod()-1)\r\nplt.show(block=True)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/scripts/example_multiple_strats.py b/modules/scripts/example_multiple_strats.py
+--- a/modules/scripts/example_multiple_strats.py	(revision fce8ee6ddc85844238445a7d22bce5a4ef9a2239)
++++ b/modules/scripts/example_multiple_strats.py	(date 1745959484285)
+@@ -12,11 +12,12 @@
+ import pickle
+ import copy
+ 
++
+ # Data Downloading
+ # Assets
+-file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data_short.xlsx")
+-# data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
+-data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
++# file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data_short.xlsx")
++data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
++# data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
+ data_manager = DataManager(data_source=data_source,
+                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
+                            rebase_prices=True,
+@@ -29,9 +30,9 @@
+ data_manager.account_implementation_lags()
+ 
+ # Factors (market)
+-file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "msci.xlsx")
+-# data_source_factors = ExcelDataSource(file_path=r".\data\msci.xlsx", sheet_name="data")
+-data_source_factors = ExcelDataSource(file_path=file_path, sheet_name="data")
++# file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "msci.xlsx")
++data_source_factors = ExcelDataSource(file_path=r".\data\msci.xlsx", sheet_name="data")
++# data_source_factors = ExcelDataSource(file_path=file_path, sheet_name="data")
+ data_manager_factors = DataManager(data_source=data_source_factors,
+                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
+                            rebase_prices=True,
+@@ -43,6 +44,7 @@
+ data_manager_factors.compute_returns()
+ 
+ # Industry data
++# industries_classification = pd.read_excel(r".\data\industry_classification.xlsx", index_col=0, sheet_name="data")
+ np.random.seed(42)
+ industries = ['IT', 'Financials', 'Healthcare', 'Industrials', 'ConsumerDiscretionary',
+               'ConsumerStaples', 'CommunicationServices', 'Energy', 'Materials', 'Utilities', 'RealEstate']
+@@ -52,8 +54,7 @@
+ industry_assignments = pd.DataFrame(
+     np.tile(industries_per_action, (returns.shape[0], 1)),
+     index=returns.index,
+-    columns=returns.columns
+-)
++    columns=returns.columns)
+ 
+ # Strategies setting
+ strats = {'cs_mom_lo': Momentum.rolling_momentum,
+@@ -165,11 +166,11 @@
+                                                  portfolio_type='long_only'
+                                                  )
+                 portfolio.compute_weights()
+-                #portfolio.rebalance_portfolio()
++                portfolio.rebalance_portfolio()
+ 
+                 # Step 3 - Backtesting
+                 backtest =  Backtest(returns=data_manager.aligned_returns,
+-                                     weights=portfolio.weights,
++                                     weights=portfolio.rebalanced_weights,
+                                      strategy_name=key_strat)
+                 strategy_returns = backtest.run_backtest()
+ 
+@@ -196,61 +197,141 @@
+                     blocking=False)
+ 
+                 # saving start dates to align all strategies and allow comparison
+-                start_dates[key_strat].append((strategy_returns != 0.0).idxmax())
++                start_dates[key_strat].append((strategy_returns != 0.0).idxmax().values[0])
+ 
+-    # Save the results
+-    with open(r".\results\strategies_results\strategies_results.pickle", 'wb') as handle:
+-        pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
++# Save the results
++with open(r".\results\strategies_results\strategies_results.pickle", 'wb') as handle:
++    pickle.dump(strategies_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+ 
+-
++# with open(r".\results\strategies_results\strategies_results.pickle", 'rb') as handle:
++#     strategies_results = pickle.load(handle)
++########################################################################################################################
++################# Storing results in a convenient format and all strategies aligned on the same dates ##################
++########################################################################################################################
+ # Recomputes the metrics for aligned strategies
+-start_date = max(x for sublist in start_dates.values() for x in sublist).values[0]
++start_date = max(x for sublist in start_dates.values() for x in sublist)
+ print(f"first date where strategy returns is available for all strategies is {start_date}")
+ # To store new results
+ strategies_results_aligned = copy.deepcopy(strategies_results)
+-all_series = []
+-all_series_by_strat = {strat: [] for strat in strats.keys()}
++all_series = []  # to store all the strategies returns in a unified dataframe
++all_series_by_strat = {strat: [] for strat in
++                       strats.keys()}  # to store all the strategies returns in a unified dataframe by strat
++all_series_metrics = []
++all_series_metrics_by_strat = {strat: [] for strat in strats.keys()}
++
+ # Now, we'll crop the strategies from this date
+-for key_strat, value_signal_function in strats.items():
+-    for key_pct, value_pct in percentiles.items():
++for key_strat in strats.keys():
++    for key_pct in percentiles.keys():
+         for industry in industry_segmentation:
+-            for key_rebalancing_freq, value_rebalancing_freq in rebalancing_freqs.items():
++            for key_rebalancing_freq in rebalancing_freqs.keys():
++
+                 strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = \
+                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'].loc[
+-                        start_date:]
++                    start_date:]
+ 
+                 # Recompute the metrics
+-                analyzer = PerformanceAnalyser(portfolio_returns=strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'],
+-                                               freq='m',
+-                                               percentiles=key_pct,
+-                                               industries=industry,
+-                                               rebal_freq=key_rebalancing_freq
+-                                               )
++                analyzer = PerformanceAnalyser(
++                    portfolio_returns=strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                        'strategy_returns'],
++                    freq='m',
++                    percentiles=key_pct,
++                    industries=industry,
++                    rebal_freq=key_rebalancing_freq
++                    )
+                 metrics = analyzer.compute_metrics()
+                 # Store the metrics
+                 for metric in metrics.keys():
+-                    strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
++                    strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[
++                        metric]
++
++                # All metrics
++                series_metrics = pd.Series(metrics, name=f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}")
++                all_series_metrics.append(series_metrics)
++
++                # All metrics by strat
++                all_series_metrics_by_strat[key_strat].append(series_metrics)
+ 
+                 # Create dataframes of all the strategies within a given strategy
+-                renamed_series_by_strat = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                renamed_series_by_strat = \
++                strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
+                     'strategy_returns'].copy()
+-                renamed_series_by_strat.name = f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"
++                renamed_series_by_strat.rename(
++                    columns={f"{key_strat}": f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"}, inplace=True)
+                 all_series_by_strat[key_strat].append(renamed_series_by_strat)
+ 
+                 # Create a dataframe of all the strategies returns to plot cumulative perf
+                 renamed_series = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
+                     'strategy_returns'].copy()
+-                renamed_series.name = f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"
++                renamed_series.rename(
++                    columns={f"{key_strat}": f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"}, inplace=True)
+                 all_series.append(renamed_series)
+ 
++# First output : a dict containing 6 dataframes with the strategies returns, one for each strategy, to plot the cumulative perf
+ # Concatenate all the series into a dataframe
+-all_strategies_returns_by_strat = {strat_key: pd.concat(all_series_by_strat[strat_key], axis=1) for strat_key in all_series_by_strat.keys()}
++all_strategies_returns_by_strat = {strat_key: pd.concat(all_series_by_strat[strat_key], axis=1) for strat_key in
++                                   all_series_by_strat.keys()}
+ # Set the first line to 0.0 for each strat
+ for strat_key, df in all_strategies_returns_by_strat.items():
+     df.iloc[0, :] = 0.0
+ 
++# Second output: a unified dataframe with all the strategies returns to plot the cumulative perf
+ all_strategies_returns = pd.concat(all_series, axis=1)
+-all_strategies_returns.iloc[0,:] = 0.0 # because all the strategies must start at 0.0
+-import matplotlib.pyplot as plt
+-plt.plot((1+all_strategies_returns).cumprod()-1)
+-plt.show(block=True)
+\ No newline at end of file
++all_strategies_returns.iloc[0, :] = 0.0  # because all the strategies must start at 0.0
++
++# Third output: a dict containing 6 dataframes with the performance metrics, one for each strategy
++all_metrics_by_strat = {k: pd.concat(v, axis=1) for k, v in all_series_metrics_by_strat.items()}
++
++# Fourth output: a unified dataframe with the performance metrics
++all_metrics = pd.concat(all_series_metrics, axis=1)
++
++# Finally creating the last results
++bench = data_manager_factors.returns.loc[start_date:]
++bench = bench.copy()
++bench.iloc[0,:] = 0.0
++# Cumulative performance overall
++utilities.plot_dataframe(df=(1+all_strategies_returns).cumprod()-1,
++                         df_benchmark=(1+bench).cumprod()-1,
++               title="Cumulative performance of all strategies",
++               xlabel="Date",
++               ylabel="Cumulative returns",
++               legend=all_strategies_returns.columns,
++               saving_path=r".\results\final_results\cumulative_performance\cumulative_returns_all_strategies.png",
++               show=False,
++               blocking=False,
++                         fontsize=7,
++                         figsize=(20, 15),
++                         n_col=6,
++                         bbox_to_anchor=(0.5,-0.15)
++
++               )
++# Cumulative performance by strategy
++for key_strat, df in all_strategies_returns_by_strat.items():
++    utilities.plot_dataframe(df=(1+df).cumprod()-1,
++                             df_benchmark=(1+bench).cumprod()-1,
++                              title=f"Cumulative performance of {key_strat}",
++                              xlabel="Date",
++                              ylabel="Cumulative returns",
++                              legend=df.columns,
++                              saving_path=fr".\results\final_results\cumulative_performance\cumulative_returns_{key_strat}.png",
++                              show=False,
++                              blocking=False,
++                             fontsize=9,
++                             figsize=(20, 15),
++                             n_col=4,
++                             bbox_to_anchor=(0.5, -0.05)
++                              )
++
++# Saving the all metrics dataframe in an Excel file
++all_metrics.to_excel(r".\results\final_results\metrics\all_metrics.xlsx",
++               sheet_name="all_metrics",
++               index=True,
++               header=True)
++# Saving the all metrics dataframes by strategy in an Excel file
++with pd.ExcelWriter(r".\results\final_results\metrics\all_metrics_by_strat.xlsx") as writer:
++    for key_strat, df in all_metrics_by_strat.items():
++        df.to_excel(writer, sheet_name=key_strat, index=True, header=True)
++
++# regarder pq 0.0 au début des rendements, surement la premiere date de rebal
++# 2 dates avec 0.0 à la fin aussi
++# mettre le bench sur les graphiques individuels
++# inclure les couts de transac dans les rendements de la stratégie (dans backtest)
+\ No newline at end of file
+Index: modules/scripts/grouping.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/modules/scripts/grouping.py b/modules/scripts/grouping.py
+new file mode 100644
+--- /dev/null	(date 1745952921184)
++++ b/modules/scripts/grouping.py	(date 1745952921184)
+@@ -0,0 +1,100 @@
++# Save the results
++import pickle
++import pandas as pd
++import numpy as np
++import copy
++from modules.my_packages.analysis import PerformanceAnalyser
++
++with open(r"C:\Users\mateo\Code\AM\Projet_V2\results\strategies_results\strategies_results.pickle", 'rb') as handle:
++    strategies_results = pickle.load(handle)
++
++strats = {'cs_mom_lo': None,
++          'cs_idio_mom_lo': None,
++          'cs_reversal_lo': None,
++          'cs_idio_reversal_lo': None,
++          'cs_sr_lo' : None,
++          'cs_idio_sr_lo' : None
++          }
++percentiles = {'deciles': (10,90),
++               'quintiles': (20,80),
++               'quartiles': (25,75)}
++
++industry_segmentation = ['AllIndustries', 'BestInIndustries']
++rebalancing_freqs = {'monthly': 1,
++                     'quarterly': 3,
++                     'semi_annually': 6,
++                     'yearly': 12,
++                     }
++########################################################################################################################
++################# Storing results in a convenient format and all strategies aligned on the same dates ##################
++########################################################################################################################
++# Recomputes the metrics for aligned strategies
++# start_date = max(x for sublist in start_dates.values() for x in sublist).values[0]
++start_date = pd.to_datetime("2008-01-31")
++print(f"first date where strategy returns is available for all strategies is {start_date}")
++# To store new results
++strategies_results_aligned = copy.deepcopy(strategies_results)
++all_series = [] # to store all the strategies returns in a unified dataframe
++all_series_by_strat = {strat: [] for strat in strats.keys()} # to store all the strategies returns in a unified dataframe by strat
++all_series_metrics = []
++all_series_metrics_by_strat = {strat: [] for strat in strats.keys()}
++
++# Now, we'll crop the strategies from this date
++for key_strat in strats.keys():
++    for key_pct in percentiles.keys():
++        for industry in industry_segmentation:
++            for key_rebalancing_freq in rebalancing_freqs.keys():
++
++                strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'] = \
++                    strategies_results[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'].loc[
++                        start_date:]
++
++                # Recompute the metrics
++                analyzer = PerformanceAnalyser(portfolio_returns=strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq]['strategy_returns'],
++                                               freq='m',
++                                               percentiles=key_pct,
++                                               industries=industry,
++                                               rebal_freq=key_rebalancing_freq
++                                               )
++                metrics = analyzer.compute_metrics()
++                # Store the metrics
++                for metric in metrics.keys():
++                    strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
++
++                # All metrics
++                series_metrics = pd.Series(metrics, name=f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}")
++                all_series_metrics.append(series_metrics)
++
++                # All metrics by strat
++                all_series_metrics_by_strat[key_strat].append(series_metrics)
++
++                # Create dataframes of all the strategies within a given strategy
++                renamed_series_by_strat = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                    'strategy_returns'].copy()
++                renamed_series_by_strat.rename(columns={f"{key_strat}":f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"}, inplace=True)
++                all_series_by_strat[key_strat].append(renamed_series_by_strat)
++
++                # Create a dataframe of all the strategies returns to plot cumulative perf
++                renamed_series = strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][
++                    'strategy_returns'].copy()
++                renamed_series.rename(columns={f"{key_strat}":f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"}, inplace=True)
++                all_series.append(renamed_series)
++
++
++
++# First output : a dict containing 6 dataframes with the strategies returns, one for each strategy, to plot the cumulative perf
++# Concatenate all the series into a dataframe
++all_strategies_returns_by_strat = {strat_key: pd.concat(all_series_by_strat[strat_key], axis=1) for strat_key in all_series_by_strat.keys()}
++# Set the first line to 0.0 for each strat
++for strat_key, df in all_strategies_returns_by_strat.items():
++    df.iloc[0, :] = 0.0
++
++# Second output: a unified dataframe with all the strategies returns to plot the cumulative perf
++all_strategies_returns = pd.concat(all_series, axis=1)
++all_strategies_returns.iloc[0,:] = 0.0 # because all the strategies must start at 0.0
++
++# Third output: a dict containing 6 dataframes with the performance metrics, one for each strategy
++all_metrics_by_strat = {k: pd.concat(v, axis=1) for k, v in all_series_metrics_by_strat.items()}
++
++# Fourth output: a unified dataframe with the performance metrics
++all_metrics = pd.concat(all_series, axis=1)
