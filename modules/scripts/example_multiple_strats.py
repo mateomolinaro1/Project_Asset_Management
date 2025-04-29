@@ -325,3 +325,5 @@ all_metrics.to_excel(r".\results\final_results\metrics\all_metrics.xlsx",header=
 with pd.ExcelWriter(r".\results\final_results\metrics\all_metrics_by_strat.xlsx") as writer:
     for strat_key, df in all_metrics_by_strat.items():
         df.to_excel(writer, sheet_name=strat_key, header=True, index=True)
+
+# End of project

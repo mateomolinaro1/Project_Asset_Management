@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="avant derniere version insh. Reste à faire: # regarder pq 0.0 au début des rendements, surement la premiere date de rebal&#10;# 2 dates avec 0.0 à la fin aussi&#10;# mettre le bench sur les graphiques individuels&#10;# inclure les couts de transac dans les rendements de la stratégie (dans backtest)">
+    <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="push VF v2...">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/scripts/example_multiple_strats.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example_multiple_strats.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,6 +52,7 @@
     "Python.example_multiple_strats.executor": "Debug",
     "Python.example_sharpe_ratio.executor": "Debug",
     "Python.grouping.executor": "Debug",
+    "Python.main.executor": "Debug",
     "Python.utilities.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
@@ -162,7 +164,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745960985701</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="push VF v2...">
+      <option name="closed" value="true" />
+      <created>1745969108897</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1745969108897</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -171,7 +181,8 @@
     <MESSAGE value="multiple strats" />
     <MESSAGE value="multiple strats, main, analysis, rebal????" />
     <MESSAGE value="avant derniere version insh. Reste à faire: # regarder pq 0.0 au début des rendements, surement la premiere date de rebal&#10;# 2 dates avec 0.0 à la fin aussi&#10;# mettre le bench sur les graphiques individuels&#10;# inclure les couts de transac dans les rendements de la stratégie (dans backtest)" />
-    <option name="LAST_COMMIT_MESSAGE" value="avant derniere version insh. Reste à faire: # regarder pq 0.0 au début des rendements, surement la premiere date de rebal&#10;# 2 dates avec 0.0 à la fin aussi&#10;# mettre le bench sur les graphiques individuels&#10;# inclure les couts de transac dans les rendements de la stratégie (dans backtest)" />
+    <MESSAGE value="push VF v2..." />
+    <option name="LAST_COMMIT_MESSAGE" value="push VF v2..." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
