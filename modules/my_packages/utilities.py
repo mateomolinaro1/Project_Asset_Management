@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from typing import Union, Tuple
 from sklearn.linear_model import LinearRegression
 import warnings
@@ -236,3 +237,42 @@ def compute_idiosyncratic_returns(df_assets:pd.DataFrame, df_factors:pd.DataFram
 
     return residuals
 
+def plot_dataframe(df:pd.DataFrame,
+                   bench:pd.DataFrame=None,
+                   save_path:str=None,
+                   title:str="Cumulative Performance overtime",
+                   xlabel:str="Date",
+                   ylabel:str="Cumulative Return",
+                   legend:bool=True,
+                   figsize:Tuple[int, int]=(20, 15),
+                   bbox_to_anchor:Tuple[float, float]=(0.5, -0.15),
+                   ncol:int=6,
+                   fontsize:int=7,
+                   show:bool=False,
+                   blocking:bool=False) -> None:
+
+    plt.figure(figsize=figsize)
+    plt.plot(df)
+    if bench is not None:
+        plt.plot(bench, color='black', label='Benchmark', linestyle="--", linewidth=4)
+
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if legend:
+        plt.legend(
+            df.columns,
+            loc='upper center',
+            bbox_to_anchor=bbox_to_anchor,
+            ncol=ncol,
+            fontsize=fontsize,
+            frameon=False
+        )
+
+    plt.grid()
+    plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight')
+    if show:
+        plt.show(block=blocking)
+    plt.close()
