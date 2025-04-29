@@ -1,6 +1,11 @@
 ### Example script to run a backtest ###
 # 0 - Import necessary libraries
 import os
+import sys
+
+# Add the project root directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from modules.my_packages.data import ExcelDataSource, DataManager
 from modules.my_packages.strategies import CrossSectionalPercentiles
 from modules.my_packages.signal_utilities import Momentum
