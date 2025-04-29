@@ -4,15 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="multiple strats">
-      <change afterPath="$PROJECT_DIR$/modules/scripts/example_rebal_example.py" afterDir="false" />
+    <list default="true" id="f0194084-e108-4599-b630-d7b1dffb521d" name="Changes" comment="multiple strats, main, analysis, rebal????">
+      <change afterPath="$PROJECT_DIR$/modules/scripts/grouping.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/my_packages/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/my_packages/backtest.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/backtest.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/my_packages/portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/portfolio.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/scripts/example.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/my_packages/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/my_packages/utilities.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/scripts/example_multiple_strats.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/scripts/example_multiple_strats.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/strategies_results/strategies_results.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/results/strategies_results/strategies_results.pickle" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,10 +56,12 @@
     "Python.example_industry_based_mom.executor": "Debug",
     "Python.example_multiple_strats.executor": "Debug",
     "Python.example_sharpe_ratio.executor": "Debug",
+    "Python.grouping.executor": "Debug",
     "Python.utilities.executor": "Debug",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/mateo/Code/ISXA/projet/Project_Investment_Solutions_Cross_Assets_final"
+    "last_opened_file_path": "C:/Users/mateo/Code/ISXA/projet/Project_Investment_Solutions_Cross_Assets_final",
+    "settings.editor.selected.configurable": "preferences.editor"
   }
 }]]></component>
   <component name="RunManager">
@@ -135,14 +136,23 @@
       <option name="project" value="LOCAL" />
       <updated>1745786611122</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="multiple strats, main, analysis, rebal????">
+      <option name="closed" value="true" />
+      <created>1745874204661</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1745874204661</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first push 23/04/2025 17:41 by Matéo Molinaro" />
     <MESSAGE value="idio mom, sharpe ratio, idio sharpe ratio" />
     <MESSAGE value="multiple strats" />
-    <option name="LAST_COMMIT_MESSAGE" value="multiple strats" />
+    <MESSAGE value="multiple strats, main, analysis, rebal????" />
+    <option name="LAST_COMMIT_MESSAGE" value="multiple strats, main, analysis, rebal????" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
