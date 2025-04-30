@@ -79,9 +79,6 @@ class EqualWeightingScheme(WeightingScheme):
                 # Setting weights to 0 at rows where all signals are missing
                 weights.loc[~mask_valid, :] = 0  # Optional as in the creation of weights, default data set to 0
                 print("For some dates, there is no signals. Weights set to 0 by default.")
-                # # Before changes
-                # weights[self.signals == -1] = 0.0
-                # print("For some dates, there is no signals. Weights set to 0 by default.")
 
         elif self.portfolio_type == "long_short":
             # Check that there is at least one positive and one negative signal at each date
@@ -115,17 +112,22 @@ class EqualWeightingScheme(WeightingScheme):
 
         # If no rebalancing period specified or rebalancing at every period, return original weights
         if self.rebal_periods is None or self.rebal_periods == 0:
+            self.rebalanced_weights = self.weights.copy()
             strategy_returns = (self.weights * self.returns).sum(axis=1)
             self.returns_after_fees = strategy_returns
-            return self.weights, strategy_returns
+            return self.rebalanced_weights, strategy_returns
 
         # Initialize rebalanced weights and returns
         self.rebalanced_weights = pd.DataFrame(0.0, index=self.weights.index, columns=self.weights.columns)
         strategy_returns = pd.Series(0.0, index=self.weights.index)
 
-        # Set initial weights
+        # Set initial weights and calculate initial returns
         first_date = self.weights.index[0]
         self.rebalanced_weights.loc[first_date] = self.weights.loc[first_date]
+        
+        # No returns for the first date (or we could set it to 0)
+        if first_date in self.returns.index:
+            strategy_returns.loc[first_date] = 0.0
 
         # Create rebalancing dates
         all_dates = self.weights.index
@@ -137,36 +139,39 @@ class EqualWeightingScheme(WeightingScheme):
         # Loop through dates
         for t, date in enumerate(all_dates[1:], 1):
             prev_date = all_dates[t - 1]
+            prev_weights = self.rebalanced_weights.loc[prev_date]
 
+            # Calculate current day's returns from previous weights
+            daily_return = (prev_weights * self.returns.loc[date]).sum()
+            
             if date in rebalancing_dates:
                 # On rebalancing dates
-                prev_weights = self.rebalanced_weights.loc[prev_date]
                 new_weights = self.weights.loc[date]
 
                 # Calculate turnover and transaction costs
                 turnover = abs(new_weights - prev_weights).sum()
                 transaction_cost = turnover * cost
 
-                # Set new weights (without reduction)
+                # Set new weights
                 self.rebalanced_weights.loc[date] = new_weights
 
-                # Calculate returns and subtract transaction costs
-                strategy_returns.loc[date] = (prev_weights * self.returns.loc[date]).sum() - transaction_cost
-
+                # Subtract transaction costs from returns
+                strategy_returns.loc[date] = daily_return - transaction_cost
             else:
-                # Between rebalancing dates
-                prev_weights = self.rebalanced_weights.loc[prev_date]
-
-                # Calculate drifted weights
+                # Between rebalancing dates - weights drift with returns
                 drifted_weights = prev_weights * (1 + self.returns.loc[date])
-                if self.portfolio_type == "long_only":
+                
+                # Normalize weights if necessary
+                if self.portfolio_type in ["long_only", "short_only"]:
                     total_weight = drifted_weights.sum()
                     if total_weight > 0:
                         drifted_weights = drifted_weights / total_weight
-
-                # Store weights and calculate returns (no transaction costs)
+                
+                # Store drifted weights
                 self.rebalanced_weights.loc[date] = drifted_weights
-                strategy_returns.loc[date] = (prev_weights * self.returns.loc[date]).sum()
+                
+                # No transaction costs between rebalancing
+                strategy_returns.loc[date] = daily_return
 
         self.returns_after_fees = strategy_returns
         return self.rebalanced_weights.fillna(0.0), strategy_returns
@@ -206,23 +211,33 @@ class NaiveRiskParity(WeightingScheme):
         if self.portfolio_type == "long_only":
             valid_mask = number_of_positive_signals > 0
             masked_inv_vol = inv_vol * (self.signals == 1)
-            weights = masked_inv_vol.div(masked_inv_vol.sum(axis=1), axis=0)
+            sum_inv_vol = masked_inv_vol.sum(axis=1)
+            # Avoid division by zero
+            weights = masked_inv_vol.div(sum_inv_vol.replace(0, np.nan), axis=0)
             weights.loc[~valid_mask, :] = 0  # Set weights to 0 if no valid signals
 
         elif self.portfolio_type == "short_only":
             valid_mask = number_of_negative_signals > 0
             masked_inv_vol = inv_vol * (self.signals == -1)
-            weights = masked_inv_vol.div(masked_inv_vol.sum(axis=1), axis=0)
+            sum_inv_vol = masked_inv_vol.sum(axis=1)
+            # Avoid division by zero
+            weights = masked_inv_vol.div(sum_inv_vol.replace(0, np.nan), axis=0)
             weights.loc[~valid_mask, :] = 0
 
         elif self.portfolio_type == "long_short":
             valid_mask = (number_of_positive_signals > 0) & (number_of_negative_signals > 0)
-            long_weights = inv_vol * (self.signals == 1)
-            short_weights = inv_vol * (self.signals == -1)
-
-            long_weights = long_weights.div(long_weights.sum(axis=1), axis=0)
-            short_weights = short_weights.div(short_weights.sum(axis=1), axis=0)
-
+            
+            # Calculate long weights
+            long_inv_vol = inv_vol * (self.signals == 1)
+            long_sum = long_inv_vol.sum(axis=1)
+            long_weights = long_inv_vol.div(long_sum.replace(0, np.nan), axis=0)
+            
+            # Calculate short weights
+            short_inv_vol = inv_vol * (self.signals == -1)
+            short_sum = short_inv_vol.sum(axis=1)
+            short_weights = short_inv_vol.div(short_sum.replace(0, np.nan), axis=0)
+            
+            # Combine long and short weights
             weights = long_weights - short_weights
             weights.loc[~valid_mask, :] = 0
 
@@ -242,17 +257,23 @@ class NaiveRiskParity(WeightingScheme):
 
         # If no rebalancing period specified or rebalancing at every period, return original weights
         if self.rebal_periods is None or self.rebal_periods == 0:
+            self.rebalanced_weights = self.weights.copy()
             strategy_returns = (self.weights * self.returns).sum(axis=1)
-            return self.weights, strategy_returns
+            self.returns_after_fees = strategy_returns
+            return self.rebalanced_weights, strategy_returns
 
         # Initialize rebalanced weights and returns
         self.rebalanced_weights = pd.DataFrame(0.0, index=self.weights.index, columns=self.weights.columns)
         strategy_returns = pd.Series(0.0, index=self.weights.index)
         cost = transaction_cost_bp / 10000
 
-        # Set initial weights
+        # Set initial weights and calculate initial returns
         first_date = self.weights.index[0]
         self.rebalanced_weights.loc[first_date] = self.weights.loc[first_date]
+        
+        # No returns for the first date (or we could set it to 0)
+        if first_date in self.returns.index:
+            strategy_returns.loc[first_date] = 0.0
 
         # Create rebalancing dates
         all_dates = self.weights.index
@@ -261,22 +282,30 @@ class NaiveRiskParity(WeightingScheme):
         for t, date in enumerate(all_dates[1:], 1):
             prev_date = all_dates[t - 1]
             prev_weights = self.rebalanced_weights.loc[prev_date]
+            
+            # Calculate current day's returns from previous weights
+            daily_return = (prev_weights * self.returns.loc[date]).sum()
 
             if date in rebalancing_dates:
+                # On rebalancing dates
                 new_weights = self.weights.loc[date]
                 turnover = abs(new_weights - prev_weights).sum()
                 transaction_cost = turnover * cost
 
                 self.rebalanced_weights.loc[date] = new_weights
-                strategy_returns.loc[date] = (prev_weights * self.returns.loc[date]).sum() - transaction_cost
+                strategy_returns.loc[date] = daily_return - transaction_cost
             else:
+                # Between rebalancing dates - weights drift with returns
                 drifted_weights = prev_weights * (1 + self.returns.loc[date])
-                if self.portfolio_type == "long_only":
+                
+                # Normalize weights if necessary
+                if self.portfolio_type in ["long_only", "short_only"]:
                     total_weight = drifted_weights.sum()
                     if total_weight > 0:
                         drifted_weights = drifted_weights / total_weight
-
+                
                 self.rebalanced_weights.loc[date] = drifted_weights
-                strategy_returns.loc[date] = (prev_weights * self.returns.loc[date]).sum()
+                strategy_returns.loc[date] = daily_return
 
+        self.returns_after_fees = strategy_returns
         return self.rebalanced_weights.fillna(0.0), strategy_returns

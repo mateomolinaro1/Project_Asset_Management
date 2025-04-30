@@ -160,18 +160,22 @@ for key_strat, value_signal_function in strats.items():
                                          industry_segmentation=industries_classification if industry == 'BestInIndustries' else None)
 
                 # Step 2 - Portfolio Construction
-                portfolio = EqualWeightingScheme(returns=data_manager.returns,
-                                                 signals=strategy.signals,
-                                                 rebal_periods=value_rebalancing_freq,
-                                                 portfolio_type='long_only'
-                                                 )
+                portfolio = EqualWeightingScheme(
+                    returns=data_manager.returns,
+                    signals=strategy.signals,
+                    rebal_periods=value_rebalancing_freq,
+                    portfolio_type='long_only'
+                )
                 portfolio.compute_weights()
                 portfolio.rebalance_portfolio()
 
                 # Step 3 - Backtesting
-                backtest =  Backtest(returns=data_manager.aligned_returns,
-                                     weights=portfolio.rebalanced_weights,
-                                     strategy_name=key_strat)
+                backtest = Backtest(
+                    returns=data_manager.aligned_returns,
+                    weights=portfolio.rebalanced_weights,
+                    strategy_name=key_strat,
+                    returns_after_fees=portfolio.returns_after_fees  # <-- Ajout ici
+                )
                 strategy_returns = backtest.run_backtest()
 
                 # Step 4 - Performance Analysis
@@ -190,10 +194,10 @@ for key_strat, value_signal_function in strats.items():
                 for metric in metrics.keys():
                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
 
-                # # Saving cumulative performance plot
-                # analyzer.plot_cumulative_performance(saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
-                #                                                  show=False,
-                #                                                  blocking=False)
+                # Saving cumulative performance plot
+                analyzer.plot_cumulative_performance(saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                                                                 show=False,
+                                                                 blocking=False)
 
                 # saving start dates to align all strategies and allow comparison
                 start_dates[key_strat].append((strategy_returns != 0.0).idxmax().values[0])
@@ -233,14 +237,10 @@ for key_strat, value_signal_function in strats.items():
                                                rebal_freq=key_rebalancing_freq
                                                )
                 metrics = analyzer.compute_metrics()
-                # analyzer.plot_cumulative_performance(
-                #     saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
-                #     show=False,
-                #     blocking=False)
+
                 # Store the metrics
                 for metric in metrics.keys():
                     strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
-
 
                 # metrics_dict and metrics_by_strat_dict
                 col_name = f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"
