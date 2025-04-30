@@ -19,7 +19,8 @@ import copy
 # Assets
 # file_path = os.path.join(r"C:\Users\mateo\Code\AM\Projet_V2", "data", "data_returns.xlsx")
 # data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
-data_source = ExcelDataSource(file_path=r".\data\data_returns.xlsx", sheet_name="data")
+# data_source = ExcelDataSource(file_path=r".\data\data_returns.xlsx", sheet_name="data")
+data_source = ExcelDataSource(file_path=r".\data\data_winsorized.xlsx", sheet_name="data")
 data_manager = DataManager(data_source=data_source,
                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
                            rebase_prices=True,
@@ -28,13 +29,15 @@ data_manager = DataManager(data_source=data_source,
                            )
 
 data_manager.load_data()
-data_manager.returns = data_manager.raw_data
+# data_manager.returns = data_manager.raw_data
+data_manager.clean_data()
+data_manager.compute_returns()
 data_manager.account_implementation_lags()
 
 # Factors (market)
 # file_path = os.path.join(r"C:\Users\mateo\Code\AM\Projet_v2", "data", "msci_prices.xlsx")
 # data_source_factors = ExcelDataSource(file_path=file_path, sheet_name="data")
-data_source_factors = ExcelDataSource(file_path=r".\data\msci_prices.xlsx", sheet_name="data")
+data_source_factors = ExcelDataSource(file_path=r".\data\msci.xlsx", sheet_name="data")
 data_manager_factors = DataManager(data_source=data_source_factors,
                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
                            rebase_prices=True,
@@ -45,7 +48,6 @@ data_manager_factors.load_data()
 data_manager_factors.clean_data()
 data_manager_factors.compute_returns()
 
-# Industry
 industries_classification = pd.read_excel(r".\data\industry_classification.xlsx", index_col=0, sheet_name="data")
 
 ########################################################################################################################
@@ -188,10 +190,10 @@ for key_strat, value_signal_function in strats.items():
                 for metric in metrics.keys():
                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
 
-                # Saving cumulative performance plot
-                analyzer.plot_cumulative_performance(saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
-                                                                 show=False,
-                                                                 blocking=False)
+                # # Saving cumulative performance plot
+                # analyzer.plot_cumulative_performance(saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                #                                                  show=False,
+                #                                                  blocking=False)
 
                 # saving start dates to align all strategies and allow comparison
                 start_dates[key_strat].append((strategy_returns != 0.0).idxmax().values[0])
@@ -231,7 +233,10 @@ for key_strat, value_signal_function in strats.items():
                                                rebal_freq=key_rebalancing_freq
                                                )
                 metrics = analyzer.compute_metrics()
-
+                # analyzer.plot_cumulative_performance(
+                #     saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                #     show=False,
+                #     blocking=False)
                 # Store the metrics
                 for metric in metrics.keys():
                     strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
@@ -328,5 +333,4 @@ with pd.ExcelWriter(r".\results\final_results\metrics\all_metrics_by_strat.xlsx"
 # 3) See why/correct/delete the few dates at the end where we have 0.0 returns (Tristan & Matéo)
 # 4) Once all above is done, run main on real data (Mateo will do it)
 # 5) Write the report (Enzo?)
-
 # 6) Clean all the scripts and all the project. Ensure all scripts run well. (Matéo will do it)

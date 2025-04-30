@@ -200,11 +200,11 @@ for key_strat, value_signal_function in strats.items():
                 for metric in metrics.keys():
                     strategies_results[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
 
-                # saving cumulative perf
-                analyzer.plot_cumulative_performance(
-                    saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
-                    show=False,
-                    blocking=False)
+                # # saving cumulative perf
+                # analyzer.plot_cumulative_performance(
+                #     saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                #     show=False,
+                #     blocking=False)
 
                 # saving start dates to align all strategies and allow comparison
                 start_dates[key_strat].append((strategy_returns != 0.0).idxmax().values[0])
@@ -244,6 +244,12 @@ for key_strat, value_signal_function in strats.items():
                                                rebal_freq=key_rebalancing_freq
                                                )
                 metrics = analyzer.compute_metrics()
+
+                # saving cumulative perf
+                analyzer.plot_cumulative_performance(
+                    saving_path=fr".\results\plots\{key_strat}\cumulative_returns_{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}.png",
+                    show=False,
+                    blocking=False)
 
                 # Store the metrics
                 for metric in metrics.keys():
