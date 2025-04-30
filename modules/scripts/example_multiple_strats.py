@@ -1,4 +1,4 @@
-# Main script
+# Pseudo Main script - toy example
 from modules.my_packages.data import ExcelDataSource, DataManager
 from modules.my_packages.strategies import CrossSectionalPercentiles
 from modules.my_packages.signal_utilities import Momentum, RollingMetrics
@@ -12,11 +12,14 @@ import os
 import pickle
 import copy
 
-# Data Downloading
+########################################################################################################################
+################################################# Data Downloading #####################################################
+########################################################################################################################
+
 # Assets
-file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data_short.xlsx")
-# data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
-data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
+# file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "data_short.xlsx")
+# data_source = ExcelDataSource(file_path=file_path, sheet_name="data")
+data_source = ExcelDataSource(file_path=r".\data\data_short.xlsx", sheet_name="data")
 data_manager = DataManager(data_source=data_source,
                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
                            rebase_prices=True,
@@ -29,9 +32,9 @@ data_manager.compute_returns()
 data_manager.account_implementation_lags()
 
 # Factors (market)
-file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "msci.xlsx")
-# data_source_factors = ExcelDataSource(file_path=r".\data\msci.xlsx", sheet_name="data")
-data_source_factors = ExcelDataSource(file_path=file_path, sheet_name="data")
+# file_path = os.path.join(r"C:\Users\mateo\Code\AM\Project_Asset_Management", "data", "msci.xlsx")
+# data_source_factors = ExcelDataSource(file_path=file_path, sheet_name="data")
+data_source_factors = ExcelDataSource(file_path=r".\data\msci.xlsx", sheet_name="data")
 data_manager_factors = DataManager(data_source=data_source_factors,
                            max_consecutive_nan=0, # as we work with monthly data, we'll not forward fill
                            rebase_prices=True,
@@ -54,6 +57,10 @@ industry_assignments = pd.DataFrame(
     index=returns.index,
     columns=returns.columns
 )
+
+########################################################################################################################
+####################################################### Inputs #########################################################
+########################################################################################################################
 
 # Strategies setting
 strats = {'cs_mom_lo': Momentum.rolling_momentum,
@@ -132,6 +139,10 @@ for strat in strats.keys():
                 for metric in metrics:
                     strategies_results[strat][percentile][industry][rebalancing_freq][metric] = None
 
+########################################################################################################################
+################################### Backtesting and "grid search" for all strategies ###################################
+########################################################################################################################
+
 # Cross-sectional strategies
 for key_strat, value_signal_function in strats.items():
     print(
@@ -165,11 +176,11 @@ for key_strat, value_signal_function in strats.items():
                                                  portfolio_type='long_only'
                                                  )
                 portfolio.compute_weights()
-                #portfolio.rebalance_portfolio()
+                portfolio.rebalance_portfolio()
 
                 # Step 3 - Backtesting
                 backtest =  Backtest(returns=data_manager.aligned_returns,
-                                     weights=portfolio.weights,
+                                     weights=portfolio.rebalanced_weights,
                                      strategy_name=key_strat)
                 strategy_returns = backtest.run_backtest()
 
@@ -206,6 +217,7 @@ with open(r".\results\strategies_results\strategies_results.pickle", 'wb') as ha
 ########################################################################################################################
 ################# Storing results in a convenient format and all strategies aligned on the same dates ##################
 ########################################################################################################################
+
 # Recomputes the metrics for aligned strategies
 start_date = max(x for sublist in start_dates.values() for x in sublist)
 print(f"first date where strategy returns is available for all strategies is {start_date}")
@@ -213,8 +225,6 @@ print(f"first date where strategy returns is available for all strategies is {st
 strategies_results_aligned = copy.deepcopy(strategies_results)
 all_series = []
 all_series_by_strat = {strat: [] for strat in strats.keys()}
-# all_metrics = pd.DataFrame(index=['total_return', 'annualized_return', 'annualized_volatility', 'annualized_sharpe_ratio', 'max_drawdown'])
-# all_metrics_by_strat = {strat: pd.DataFrame(index=['total_return', 'annualized_return', 'annualized_volatility', 'annualized_sharpe_ratio', 'max_drawdown']) for strat in strats.keys()}
 metrics_dict = {}  # Pour all_metrics
 metrics_by_strat_dict = {strat: {} for strat in strats.keys()}  # Pour all_metrics_by_strat
 # Now, we'll crop the strategies from this date
@@ -240,10 +250,7 @@ for key_strat, value_signal_function in strats.items():
                     strategies_results_aligned[key_strat][key_pct][industry][key_rebalancing_freq][metric] = metrics[metric]
 
 
-                # # All metrics
-                # all_metrics[f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"] = pd.Series(metrics)
-                # # All metrics by strat
-                # all_metrics_by_strat[key_strat][f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"] = pd.Series(metrics)
+                # metrics_dict and metrics_by_strat_dict
                 col_name = f"{key_strat}_{key_pct}_{industry}_{key_rebalancing_freq}"
                 metrics_dict[col_name] = metrics
                 metrics_by_strat_dict[key_strat][col_name] = metrics
@@ -327,3 +334,11 @@ with pd.ExcelWriter(r".\results\final_results\metrics\all_metrics_by_strat.xlsx"
         df.to_excel(writer, sheet_name=strat_key, header=True, index=True)
 
 # End of project
+# To Do
+# 1) See if the individual charts in plots begin with non 0.0 returns (first date is a rebalancing date) (Tristan & Matéo)
+# 2) see to account for transaction costs. Transactions costs = delta weights * x bps. Deduce that from the strategy returns in backtest. (Tristan & Matéo)
+# 3) See why/correct/delete the few dates at the end where we have 0.0 returns (Tristan & Matéo)
+# 4) Once all above is done, run main on real data (Mateo will do it)
+# 5) Write the report (Enzo?)
+
+# 6) Clean all the scripts and all the project. Ensure all scripts run well. (Matéo will do it)
