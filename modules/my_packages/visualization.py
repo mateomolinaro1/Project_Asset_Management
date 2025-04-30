@@ -11,7 +11,8 @@ class Visualizer:
         """Display the cumulative performance"""
         plt.figure(figsize=figsize)
         plt.plot(self.performance.cumulative_performance, label="Strategy Returns")
-        plt.title(title)
+        plt.yscale('log')
+        plt.title(title + " (log scale)")
         plt.legend()
         plt.grid(True)
         plt.show(block=True)
