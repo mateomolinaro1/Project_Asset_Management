@@ -13,5 +13,5 @@ The code main.py (which can be long to run ~2h) generates the results and store 
 Example of final results outputs 1) (.\results\final_results\cumulative_performance):
 ![Texte alternatif](/results/final_results/cumulative_performance/all_strategies_cumulative_returns.png)
 
-Note: excel files all_metrics and all_metrics_by_strat in .\results\final_results\metrics are generated when running the script main. all_metrics_by_strat_formatted is not nut it's just a more friendly formatted version of all_mertics_by_strat which looks like this:
+Note: excel files all_metrics and all_metrics_by_strat in .\results\final_results\metrics are generated when running the script main. all_metrics_by_strat_formatted is not but it's just a more friendly formatted version of all_mertics_by_strat which looks like this:
 ![Texte alternatif](/results/final_results/metrics/cs_sr_lo.png)
